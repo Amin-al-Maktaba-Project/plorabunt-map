@@ -52,6 +52,7 @@
   #resetBtn:hover,#top10Btn:hover{border-color:var(--red);color:var(--ink);}
   #top10Btn.active{border-color:var(--red);color:var(--ink);background:rgba(193,39,45,0.12);}
 
+  #addError a{color:var(--red);text-decoration:underline;}
   .review-note{font-size:11.5px;line-height:1.55;color:var(--ink-dim);margin:0 0 4px;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:rgba(193,39,45,0.05);}
   #addModal-body textarea{background:#141010;border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;resize:vertical;}
   #addModal-body textarea:focus{outline:none;border-color:var(--red);}
@@ -616,6 +617,9 @@ document.getElementById('addCancel').addEventListener('click', () => addOverlay.
 addOverlay.addEventListener('click', e => { if (e.target === addOverlay) addOverlay.classList.remove('open'); });
 
 document.getElementById('addSubmit').addEventListener('click', () => {
+  const errEl0 = document.getElementById('addError');
+  errEl0.textContent = '';
+  errEl0.innerHTML = '';
   const val = id => (document.getElementById(id).value || '').trim();
   const dateVal = document.getElementById('f-date').value;
   const ev      = val('f-ev');
@@ -630,12 +634,15 @@ document.getElementById('addSubmit').addEventListener('click', () => {
   const notes   = val('f-notes');
   const errEl   = document.getElementById('addError');
 
-  if (!dateVal || !country || !ev) {
-    errEl.textContent = 'Please fill in at least date, event, and country.';
-    return;
-  }
-  if (!src) {
-    errEl.textContent = 'A source is required. Every record in this dataset is traceable to a source.';
+  const missing = [];
+  if (!dateVal) missing.push('date');
+  if (!ev)      missing.push('event');
+  if (!country) missing.push('country');
+  if (!src)     missing.push('source URL');
+  if (missing.length) {
+    errEl.textContent = 'Still missing: ' + missing.join(', ') + '. '
+      + (missing.includes('source URL')
+          ? 'Every record in this dataset must be traceable to a source.' : '');
     return;
   }
 
@@ -665,11 +672,17 @@ document.getElementById('addSubmit').addEventListener('click', () => {
   ].join('\n');
 
   const url = `https://github.com/${GITHUB_REPO}/issues/new`
-    + `?labels=${encodeURIComponent('new case,needs review')}`
-    + `&title=${encodeURIComponent(title)}`
+    + `?title=${encodeURIComponent(title)}`
     + `&body=${encodeURIComponent(body)}`;
 
-  window.open(url, '_blank', 'noopener');
+  const win = window.open(url, '_blank');
+  if (!win || win.closed || typeof win.closed === 'undefined') {
+    // Safari and other browsers may block programmatic windows.
+    errEl.innerHTML = 'Your browser blocked the new tab. '
+      + '<a href="' + url + '" target="_blank" rel="noopener">Open the report on GitHub</a>.';
+    return;
+  }
+
   ['f-date','f-ev','f-city','f-country','f-vic','f-inj','f-grp','f-src','f-notes']
     .forEach(id => document.getElementById(id).value = '');
   addOverlay.classList.remove('open');
