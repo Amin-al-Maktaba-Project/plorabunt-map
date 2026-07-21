@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this dataset or map, please cite it as below."
+title: "Plorabunt: Attacks on Places of Worship, A Global Record"
+abstract: >-
+  An interactive map and curated dataset documenting violence against worshippers,
+  places of worship, and religious personnel worldwide.
+type: dataset
+authors:
+  - family-names: El Ganadi
+    given-names: Amina
+    orcid: "https://orcid.org/0000-0002-8196-2628"
+    affiliation: "FSCIRE / Universita di Modena e Reggio Emilia / Universita di Palermo"
+license: CC-BY-4.0
+url: "https://amin-al-maktaba.github.io/plorabunt-map/"
+keywords:
+  - religious violence
+  - digital humanities
+  - places of worship
+  - open data
