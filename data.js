@@ -1,9 +1,10 @@
 /* ------------------------------------------------------------------------
    Plorabunt dataset. One incident per line.
 
-   To add a case: copy the last line, paste it above the closing "];",
-   and edit the values. Keep the comma at the end of every line except
-   the last one.
+   To add a case by hand: copy the last line, paste it above the closing "];",
+   and edit the values. Keep the comma at the end of every line except the last.
+
+   To import from the workbook: python3 tools/update_data.py <workbook.xlsx>
 
    Field notes:
      d       date as YYYYMMDD (string)
@@ -1675,5 +1676,6 @@ window.PLORABUNT_DATA = [
 {"d": "20250622", "y": 2025, "ev": "Mar Elias Church", "city": "Damascus", "country": "Syria", "cc": "Syria", "rel": "Other/Unknown", "relRaw": "Unknown", "worship": "Christian", "mode": "Bombing/explosion", "vic": "22-25 (Uncertain)", "inj": "63", "grp": "Unknown", "src": "https://www.dw.com/en/syria-deadly-blast-hits-church-in-damascus/a-73000565", "modeB": "Bombing/Explosion", "vicN": 22},
 {"d": "20250928", "y": 2025, "ev": "Gunman opens fire at Michigan church and sets it ablaze", "city": "Michigan", "country": "United States", "cc": "United States of America", "rel": "Christianity", "relRaw": "Christianity", "worship": "Christian", "mode": "Killing/shooting/firing", "vic": "4", "inj": "8", "grp": "Unknown", "src": "https://www.lemonde.fr/en/international/article/2025/09/29/at-least-4-people-dead-and-8-wounded-in-a-shooting-and-fire-at-a-michigan-church-police-say_6745882_4.html?", "modeB": "Armed Assault", "vicN": 4},
 {"d": "20260206", "y": 2026, "ev": "Islamabad mosque bombing", "city": "Islamabad", "country": "Pakistan", "cc": "Pakistan", "rel": "Islam", "relRaw": "Islam", "worship": "Muslim", "mode": "Bombing/explosion", "vic": "31 (Uncertain)", "inj": "170 (Uncertain)", "grp": "Islamic State, also known as Daesh", "src": "https://www.ksat.com/news/world/2026/02/06/a-bombing-at-a-shiite-mosque-on-islamabads-outskirts-kills-at-least-15-and-wounds-dozens/", "modeB": "Bombing/Explosion", "vicN": 31},
-{"d": "20260211", "y": 2026, "ev": "Drone strike on a mosque kills 2 children in Sudan", "city": "Al-Rahad", "country": "Sudan", "cc": "Sudan", "rel": "Islam", "relRaw": "Islam", "worship": "Muslim", "mode": "Bombing/explosion", "vic": "2", "inj": "13", "grp": "Rapid Support Forces (RSF)", "src": "https://www.aljazeera.com/news/2026/2/12/three-children-killed-in-drone-strike-on-mosque-in-central-sudan-doctors?", "modeB": "Bombing/Explosion", "vicN": 2}
+{"d": "20260211", "y": 2026, "ev": "Drone strike on a mosque kills 2 children in Sudan", "city": "Al-Rahad", "country": "Sudan", "cc": "Sudan", "rel": "Islam", "relRaw": "Islam", "worship": "Muslim", "mode": "Bombing/explosion", "vic": "2", "inj": "13", "grp": "Rapid Support Forces (RSF)", "src": "https://www.aljazeera.com/news/2026/2/12/three-children-killed-in-drone-strike-on-mosque-in-central-sudan-doctors?", "modeB": "Bombing/Explosion", "vicN": 2},
+{"d": "20260518", "y": 2026, "ev": "2026 Islamic Center of San Diego shooting", "city": "San Diego", "country": "United States of America", "cc": "United States of America", "rel": "Islam", "relRaw": "Islam", "worship": "Muslim", "mode": "Killing/shooting/firing", "vic": "3", "inj": "0", "grp": "Unknown", "src": "https://www.bbc.com/news/articles/c5y7q66gq56o", "modeB": "Armed Assault", "vicN": 3}
 ];

@@ -9,7 +9,6 @@
 <script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
 <script src="data.js"></script>
-<script></script>
 <style>
   :root{
     --bg:#0a0a0a; --bg2:#111111; --line:#2a2626; --ink:#ece7e2; --ink-dim:#9a938d;
@@ -94,7 +93,7 @@
 
   main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;}
   main > #map-wrap, main > #listView{flex:1;}
-  #map-wrap{flex:1;position:relative;overflow:hidden;min-height:0;}
+  #map-wrap{flex:1;position:relative;overflow:hidden;min-height:0;min-width:340px;}
   svg#map{width:100%;height:100%;display:block;}
   .country{fill:#2c2725;stroke:#4a4340;stroke-width:0.6;}
   .country.dimmed{opacity:0.35;}
@@ -114,7 +113,7 @@
   #legend .title{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;color:var(--ink-dim);}
 
   aside#panel{width:0;overflow:hidden;border-left:1px solid var(--line);background:var(--bg2);transition:width .25s ease;flex-shrink:0;display:flex;flex-direction:column;}
-  aside#panel.open{width:400px;}
+  aside#panel.open{width:min(400px,34vw);min-width:260px;}
   #panel-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);flex-shrink:0;position:relative;}
   #panel-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0 0 4px;}
   #panel-head .meta{font-size:11px;color:var(--ink-dim);}
@@ -493,6 +492,8 @@ document.getElementById('searchInput').addEventListener('input', e => {
 document.getElementById('searchClear').addEventListener('click', () => {
   searchQuery = '';
   document.getElementById('searchInput').value = '';
+  selectedCountry = null;
+  document.getElementById('panel').classList.remove('open');
   render();
 });
 
@@ -668,11 +669,13 @@ function render() {
   drawLegend(maxCount);
   drawTop10(dotData);
   renderListView(data);
-  if (isSearchActive()) {
+  if (viewMode === 'map' && isSearchActive()) {
     renderSearchPanel();
-  } else if (selectedCountry) {
+  } else if (viewMode === 'map' && selectedCountry) {
     const d = dotData.find(x=>x.name===selectedCountry);
     if (d) fillPanel(d); else { document.getElementById('panel').classList.remove('open'); selectedCountry=null; }
+  } else {
+    document.getElementById('panel').classList.remove('open');
   }
 }
 
