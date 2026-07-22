@@ -6,13 +6,13 @@ abstract: >-
   places of worship, and religious personnel worldwide.
 type: dataset
 authors:
-  - family-names: Ruozzi
-    given-names: Federico
-    orcid: "https://orcid.org/0000-0003-2729-5016"
   - family-names: El Ganadi
     given-names: Amina
     orcid: "https://orcid.org/0000-0002-8196-2628"
-license: CC-BY-4.0
+  - family-names: Ruozzi
+    given-names: Federico
+    orcid: "https://orcid.org/0000-0003-2729-5016"
+license: CC-BY-NC-4.0
 url: "https://amin-al-maktaba.github.io/plorabunt-map/"
 version: "1.0"
 date-released: "2026-07-22"

@@ -1,0 +1,104 @@
+{
+  "_comment": "Shared normalisation rules. Read by tools/update_data.py and by the curator panel in index.html. Edit here only.",
+  "columns": {
+    "DATE": 0,
+    "EVENT": 2,
+    "PLACE-BASED WORSHIP": 3,
+    "CITY": 5,
+    "COUNTRY": 6,
+    "MODE": 7,
+    "N. INJURED": 9,
+    "N. VICTIMS": 10,
+    "VICTIMS' RELIGION": 12,
+    "KILLERS' MILITANT GROUP": 20,
+    "SOURCES": 31
+  },
+  "countryToMapName": {
+    "Ancash, Peru": "Peru",
+    "Ayacucho, Peru": "Peru",
+    "Huamanga, Peru": "Peru",
+    "Lambayeque, Peru": "Peru",
+    "Borno State, Nigeria": "Nigeria",
+    "Gombe (State), Nigeria": "Nigeria",
+    "Kaduna State, Nigeria": "Nigeria",
+    "Ondo State, Nigeria": "Nigeria",
+    "Punjab, India": "India",
+    "Rajasthan, India": "India",
+    "Tamil Nadu, India": "India",
+    "California, United States": "United States of America",
+    "Texas, United States": "United States of America",
+    "United States": "United States of America",
+    "Chihuahua State, Mexico": "Mexico",
+    "Magallanes And Chilean Antarctica, Chile": "Chile",
+    "Central Mali": "Mali",
+    "Northern Ireland": "United Kingdom",
+    "Northern Ireland, United Kingdom": "United Kingdom",
+    "Bosnia-Herzegovina": "Bosnia and Herz.",
+    "Central African Republic": "Central African Rep.",
+    "Democratic Republic of the Congo": "Dem. Rep. Congo",
+    "South Sudan": "S. Sudan",
+    "Saint Lucia": "__SaintLucia__",
+    "Khyber Agency In Federally Administered Tribal Areas (Fata)": "Pakistan",
+    "Kurram Agency In Federally Administered Tribal Areas (Fata)": "Pakistan"
+  },
+  "religionBuckets": [
+    "Islam",
+    "Christianity",
+    "Hinduism",
+    "Buddhism",
+    "Sikhism",
+    "Judaism"
+  ],
+  "modeRules": [
+    {
+      "label": "Bombing/Explosion",
+      "needles": [
+        "bomb",
+        "explos",
+        "blast",
+        "grenade",
+        "ied",
+        "mortar",
+        "incendiary"
+      ]
+    },
+    {
+      "label": "Assassination",
+      "needles": [
+        "assassin"
+      ]
+    },
+    {
+      "label": "Hostage Taking",
+      "needles": [
+        "hostage",
+        "kidnap",
+        "abduct",
+        "barricade",
+        "hijack"
+      ]
+    },
+    {
+      "label": "Armed Assault",
+      "needles": [
+        "armed assault",
+        "shoot",
+        "gunfire",
+        "firearm",
+        "firing",
+        "fire on",
+        "stab",
+        "killing",
+        "massacre",
+        "ambush",
+        "assault",
+        "attack with",
+        "melee",
+        "beat",
+        "lynch",
+        "arson attack"
+      ]
+    }
+  ],
+  "duplicateCutoff": 0.82
+}
