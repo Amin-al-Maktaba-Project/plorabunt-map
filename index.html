@@ -198,6 +198,10 @@
   .credit-row:last-child{border-bottom:none;}
   .credit-name{color:var(--ink);font-size:13px;}
   .credit-role{font-size:11px;color:var(--ink-dim);}
+  .dl-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 4px;}
+  .dl-btn{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:7px 13px;border-radius:100px;cursor:pointer;white-space:nowrap;}
+  .dl-btn:hover{border-color:var(--red);color:var(--ink);}
+  .dl-note{font-size:11px;color:var(--ink-dim);}
   .cite-box{background:#141010;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;padding:12px 14px;font-size:11.5px;line-height:1.6;color:var(--ink);margin:0 0 10px;}
   .todo{color:var(--red);}
   #addOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:20;align-items:center;justify-content:center;}
@@ -444,7 +448,14 @@
       </div>
 
       <h3>Data and code</h3>
-      <p>The dataset and the code that renders it are available at
+      <p>Download the published record as a spreadsheet. The file is generated from what the map
+      currently holds, so it is always in step with what you see.</p>
+      <div class="dl-row">
+        <button id="dlCsv" class="dl-btn">Download CSV</button>
+        <button id="dlXlsx" class="dl-btn">Download Excel</button>
+        <span id="dlNote" class="dl-note"></span>
+      </div>
+      <p style="margin-top:12px;">The dataset and the code that renders it are available at
       <a href="https://github.com/Amin-Al-Maktaba/plorabunt-map" target="_blank" rel="noopener">github.com/Amin-Al-Maktaba/plorabunt-map</a>,
       where the full revision history of every record can be consulted.</p>
       <p>The dataset is released under
@@ -1112,6 +1123,81 @@ document.getElementById('addSubmit').addEventListener('click', () => {
   ['f-date','f-ev','f-city','f-country','f-vic','f-inj','f-grp','f-src','f-notes']
     .forEach(id => document.getElementById(id).value = '');
   addOverlay.classList.remove('open');
+});
+
+/* ==================================================================
+   Downloading the dataset
+   ------------------------------------------------------------------
+   Generated from what the page holds, so the file can never fall out
+   of step with the map. Carries the sixteen fields the map uses, not
+   the full research workbook.
+   ================================================================== */
+
+const EXPORT_FIELDS = [
+  ['d','date'], ['y','year'], ['ev','event'], ['city','city'],
+  ['country','country_as_recorded'], ['cc','country_mapped'],
+  ['rel','religion_grouped'], ['relRaw','religion_as_recorded'],
+  ['worship','place_of_worship'], ['mode','mode_as_recorded'],
+  ['modeB','mode_grouped'], ['vic','victims_killed_as_reported'],
+  ['vicN','victims_killed_numeric'], ['inj','injured_as_reported'],
+  ['grp','group_attribution'], ['src','source']
+];
+
+function exportRows() {
+  const rows = [EXPORT_FIELDS.map(f => f[1])];
+  window.PLORABUNT_DATA.forEach(r => {
+    rows.push(EXPORT_FIELDS.map(f => {
+      const v = r[f[0]];
+      return (v === null || v === undefined) ? '' : v;
+    }));
+  });
+  return rows;
+}
+
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function exportName(ext) {
+  return `plorabunt_dataset_${new Date().toISOString().slice(0,10)}.${ext}`;
+}
+
+document.getElementById('dlCsv').addEventListener('click', () => {
+  const note = document.getElementById('dlNote');
+  try {
+    const esc = v => {
+      const s = String(v);
+      return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    // Semicolons and a BOM, so that a double-click opens correctly in Excel
+    // on a European locale instead of dumping everything into one column.
+    const csv = '\ufeff' + exportRows().map(r => r.map(esc).join(';')).join('\r\n');
+    saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), exportName('csv'));
+    note.textContent = window.PLORABUNT_DATA.length + ' records';
+  } catch (e) {
+    note.textContent = 'Export failed: ' + e.message;
+  }
+});
+
+document.getElementById('dlXlsx').addEventListener('click', async () => {
+  const note = document.getElementById('dlNote');
+  note.textContent = 'Building the file…';
+  try {
+    try { await loadScriptOnce(XLSX_LOCAL); }
+    catch (e) { await loadScriptOnce(XLSX_CDN); }
+    const ws = XLSX.utils.aoa_to_sheet(exportRows());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Plorabunt');
+    XLSX.writeFile(wb, exportName('xlsx'));
+    note.textContent = window.PLORABUNT_DATA.length + ' records';
+  } catch (e) {
+    note.textContent = 'Export failed: ' + e.message;
+  }
 });
 
 /* ==================================================================
