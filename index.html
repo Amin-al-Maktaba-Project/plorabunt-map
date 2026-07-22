@@ -146,13 +146,32 @@
   ::-webkit-scrollbar-thumb{background:#2a2626;border-radius:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
 
+  #aboutOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:21;align-items:center;justify-content:center;}
+  #aboutOverlay.open{display:flex;}
+  #aboutModal{width:640px;max-width:calc(100vw - 32px);max-height:min(88vh,900px);overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
+  #aboutModal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line);}
+  #aboutModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0;}
+  #aboutModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:20px 24px 26px;font-size:12.5px;line-height:1.65;color:var(--ink-dim);}
+  #aboutModal-body h3{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--red);margin:22px 0 8px;font-weight:600;}
+  #aboutModal-body h3:first-child{margin-top:0;}
+  #aboutModal-body p{margin:0 0 10px;}
+  #aboutModal-body a{color:var(--ink);text-decoration:underline;text-underline-offset:2px;}
+  #aboutModal-body a:hover{color:var(--red);}
+  #aboutModal-body ul{margin:0 0 10px;padding-left:18px;}
+  #aboutModal-body li{margin-bottom:5px;}
+  .credit-row{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .credit-row:last-child{border-bottom:none;}
+  .credit-name{color:var(--ink);font-size:13px;}
+  .credit-role{font-size:11px;color:var(--ink-dim);}
+  .cite-box{background:#141010;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;padding:12px 14px;font-size:11.5px;line-height:1.6;color:var(--ink);margin:0 0 10px;}
+  .todo{color:var(--red);}
   #addOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:20;align-items:center;justify-content:center;}
   #addOverlay.open{display:flex;}
   #addModal{width:480px;max-width:calc(100vw - 32px);max-height:min(88vh,860px);overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
   #addModal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);}
   #addModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:19px;margin:0;}
-  #addModal-head button{background:none;border:none;color:var(--ink-dim);font-size:18px;cursor:pointer;}
-  #addModal-head button:hover{color:var(--ink);}
+  #addModal-head button,#aboutModal-head button{background:none;border:none;color:var(--ink-dim);font-size:18px;cursor:pointer;}
+  #addModal-head button:hover,#aboutModal-head button:hover{color:var(--ink);}
   #addModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px;}
   .review-note{font-size:11.5px;line-height:1.55;color:var(--ink-dim);margin:0 0 4px;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:rgba(193,39,45,0.05);}
   #addModal-body textarea{background:#141010;border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;resize:vertical;}
@@ -264,6 +283,7 @@
         <button data-metric="incidents" class="active">Incidents</button>
         <button data-metric="victims">Victims killed</button>
       </div>
+      <button id="aboutBtn" style="width:auto;">About</button>
       <button id="resetBtn" style="width:auto;">Reset filters</button>
       <button id="addCaseBtn" class="primary-btn" style="width:auto;">+ Submit a case</button>
     </div>
@@ -287,6 +307,87 @@
       <div id="panel-list"></div>
     </aside>
   </main>
+</div>
+
+<div id="aboutOverlay">
+  <div id="aboutModal">
+    <div id="aboutModal-head">
+      <h2>About this database</h2>
+      <button id="aboutClose">✕</button>
+    </div>
+    <div id="aboutModal-body">
+
+      <h3>What this is</h3>
+      <p>Plorabunt is a curated record of attacks on places of worship, on worshippers, and on
+      religious personnel worldwide. Each entry documents a single incident and is tied to the
+      source material from which it was reconstructed.</p>
+
+      <h3>How to read the map</h3>
+      <p>Points are aggregated by country, not by exact location. The size of a point reflects the
+      number of <em>recorded incidents</em> in that country, or the number of victims killed when
+      that metric is selected; colour deepens with the number of victims killed. A large point
+      therefore means "many entries in this record", which is not the same as "the most violence".</p>
+
+      <h3>Coverage and limits</h3>
+      <p>The density of this record reflects the availability and the language of reporting as much
+      as it reflects events. Countries covered intensively by English-language and international
+      media are documented more thoroughly here than countries where reporting is sparse,
+      restricted, or published in languages not systematically surveyed. Absence of points is
+      evidence about the record, not about the world.</p>
+      <p>Casualty figures are given as reported. Where sources disagree, the range is preserved
+      rather than resolved, and entries marked "Unknown" or "(Uncertain)" record a genuine gap or
+      dispute in the underlying reporting. Attribution to a group is given only where a source
+      states it; it is not inferred.</p>
+      <h3>Inclusion criteria</h3>
+      <p>An event enters this record when the victims were attacked <em>inside the place of worship
+      in question</em>, or while <em>performing a religious act in the course of a religious
+      ceremony</em>. The test is therefore the situation of the victims at the moment of the attack.
+      An attack that meets one of these two conditions is recorded whether or not the motive
+      attributed to the perpetrators is religious, disputed, or unknown.</p>
+      <p class="todo">⚠️ Still to be stated by the editors: the geographical and chronological scope
+      deliberately surveyed, the categories of event deliberately excluded, and the procedure by
+      which an entry is verified before publication.</p>
+
+      <h3>Credits</h3>
+      <div class="credit-row">
+        <div>
+          <div class="credit-name">Federico Ruozzi</div>
+          <div class="credit-role"><a href="https://orcid.org/0000-0003-2729-5016" target="_blank" rel="noopener">orcid.org/0000-0003-2729-5016</a></div>
+        </div>
+      </div>
+      <div class="credit-row">
+        <div>
+          <div class="credit-name">Amina El Ganadi</div>
+          <div class="credit-role"><a href="https://orcid.org/0000-0002-8196-2628" target="_blank" rel="noopener">orcid.org/0000-0002-8196-2628</a></div>
+        </div>
+      </div>
+
+      <h3>Data and code</h3>
+      <p>The dataset and the code that renders it are available at
+      <a href="https://github.com/Amin-Al-Maktaba/plorabunt-map" target="_blank" rel="noopener">github.com/Amin-Al-Maktaba/plorabunt-map</a>,
+      where the full revision history of every record can be consulted.</p>
+      <p>The dataset is released under
+      <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">Creative
+      Commons Attribution 4.0 International (CC BY 4.0)</a>: it may be reused, redistributed and
+      adapted for any purpose, including commercially, provided the authors are credited. The
+      software that renders the map is released under the MIT licence.</p>
+      <p class="todo">⚠️ Proposed pairing, to be confirmed by the editors before wider
+      circulation.</p>
+
+      <h3>Suggested citation</h3>
+      <div class="cite-box">
+        Ruozzi, Federico, and Amina El Ganadi. <em>Plorabunt: Attacks on Places of Worship,
+        A Global Record</em>. Version <span id="aboutVersion">–</span>, <span id="aboutUpdated">–</span>.
+        https://amin-al-maktaba.github.io/plorabunt-map/
+      </div>
+
+      <h3>Corrections</h3>
+      <p>Corrections and additions are welcome. Use the <strong>Submit a case</strong> button, which
+      opens a pre-filled report; every submission is reviewed against its source before it enters
+      the published record, and the review remains publicly visible.</p>
+
+    </div>
+  </div>
 </div>
 
 <div id="addOverlay">
@@ -465,15 +566,35 @@ modeBtn.addEventListener('click', e => { e.stopPropagation(); modePanel.classLis
 document.addEventListener('click', () => modePanel.classList.remove('open'));
 modePanel.addEventListener('click', e => e.stopPropagation());
 
-document.getElementById('dateFrom').addEventListener('change', e => {
-  dateFrom = e.target.value.replaceAll('-','') || '19820101';
+function applyDateRange() {
+  const fromEl = document.getElementById('dateFrom');
+  const toEl   = document.getElementById('dateTo');
+  let f = (fromEl.value || '').replaceAll('-','');
+  let t = (toEl.value   || '').replaceAll('-','');
+
+  // An input/date field reports an empty value while a segment is still being
+  // typed, so ignore anything that is not a complete date.
+  if (f.length !== 8) f = '19820101';
+  if (t.length !== 8) t = '20261231';
+
+  // A reversed range would silently show nothing at all; swap instead.
+  if (f > t) { [f, t] = [t, f]; }
+
+  dateFrom = f;
+  dateTo   = t;
   yearFrom = +dateFrom.slice(0,4);
+  yearTo   = +dateTo.slice(0,4);
   render();
-});
-document.getElementById('dateTo').addEventListener('change', e => {
-  dateTo = e.target.value.replaceAll('-','') || '20261231';
-  yearTo = +dateTo.slice(0,4);
-  render();
+}
+
+['dateFrom','dateTo'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', applyDateRange);
+  el.addEventListener('input', applyDateRange);
+  el.addEventListener('blur', applyDateRange);
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); applyDateRange(); el.blur(); }
+  });
 });
 
 document.querySelectorAll('#metricToggle button').forEach(b => {
@@ -812,6 +933,30 @@ document.getElementById('addCaseBtn').addEventListener('click', () => {
 document.getElementById('addClose').addEventListener('click', () => addOverlay.classList.remove('open'));
 document.getElementById('addCancel').addEventListener('click', () => addOverlay.classList.remove('open'));
 addOverlay.addEventListener('click', e => { if (e.target === addOverlay) addOverlay.classList.remove('open'); });
+
+/* ---------------- About panel ---------------- */
+const DATASET_VERSION = '1.0';
+const DATASET_UPDATED = '22 July 2026';
+
+const aboutOverlay = document.getElementById('aboutOverlay');
+document.getElementById('aboutVersion').textContent = DATASET_VERSION;
+document.getElementById('aboutUpdated').textContent = DATASET_UPDATED;
+
+document.getElementById('aboutBtn').addEventListener('click', () => {
+  aboutOverlay.classList.add('open');
+});
+document.getElementById('aboutClose').addEventListener('click', () => {
+  aboutOverlay.classList.remove('open');
+});
+aboutOverlay.addEventListener('click', e => {
+  if (e.target === aboutOverlay) aboutOverlay.classList.remove('open');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    aboutOverlay.classList.remove('open');
+    addOverlay.classList.remove('open');
+  }
+});
 
 document.getElementById('addSubmit').addEventListener('click', () => {
   const errEl = document.getElementById('addError');
