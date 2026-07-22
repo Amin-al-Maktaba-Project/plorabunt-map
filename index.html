@@ -101,7 +101,8 @@
   #searchClear{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:12px;padding:7px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
   #searchClear:hover{border-color:var(--red);color:var(--ink);}
 
-  #mapControls{position:absolute;top:16px;right:16px;z-index:8;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end;max-width:calc(55% - 24px);}
+  #mapControls{position:absolute;top:16px;right:16px;z-index:8;transition:right .2s ease;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end;max-width:calc(55% - 24px);}
+  main.panel-open #mapControls{right:calc(max(280px,min(400px,42vw)) + 16px);max-width:calc(45% - 24px);}
   #mapControlsLeft{position:absolute;top:16px;left:16px;z-index:8;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;max-width:calc(45% - 24px);}
   #mapControls .segmented{background:rgba(10,10,10,0.75);}
 
@@ -136,8 +137,8 @@
   #legend svg{overflow:visible;}
   #legend .title{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;color:var(--ink-dim);}
 
-  aside#panel{position:absolute;top:0;right:0;height:100%;z-index:7;width:0;overflow:hidden;border-left:1px solid var(--line);background:var(--bg2);transition:width .2s ease;display:flex;flex-direction:column;}
-  aside#panel.open{width:min(400px,42vw);min-width:280px;box-shadow:-18px 0 40px rgba(0,0,0,0.5);}
+  aside#panel{--panel-w:max(280px,min(400px,42vw));position:absolute;top:0;right:0;height:100%;z-index:9;width:0;overflow:hidden;border-left:1px solid var(--line);background:var(--bg2);transition:width .2s ease;display:flex;flex-direction:column;}
+  aside#panel.open{width:max(280px,min(400px,42vw));box-shadow:-18px 0 40px rgba(0,0,0,0.5);}
   #panel-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);flex-shrink:0;position:relative;}
   #panel-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0 0 4px;}
   #panel-head .meta{font-size:11px;color:var(--ink-dim);}
@@ -1572,6 +1573,16 @@ document.getElementById('curPublish').addEventListener('click', async () => {
     btn.disabled = false;
   }
 });
+
+/* Keep <main> in step with the side panel, so the toolbar can move out of its
+   way wherever the panel is opened or closed from. */
+(function () {
+  const panel = document.getElementById('panel');
+  const main = document.querySelector('main');
+  const sync = () => main.classList.toggle('panel-open', panel.classList.contains('open'));
+  new MutationObserver(sync).observe(panel, { attributes: true, attributeFilter: ['class'] });
+  sync();
+})();
 
 window.addEventListener('hashchange', refreshCuratorButton);
 refreshCuratorButton();
