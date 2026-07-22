@@ -4,10 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Attacks on Places of Worship — A Global Record</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
+<style>
+  /* Self-hosted so the page depends on nobody. If the files are missing the
+     browser falls back to Georgia, which is close enough that nothing breaks. */
+  @font-face{font-family:'PT Serif';font-style:normal;font-weight:400;font-display:swap;
+    src:url('vendor/PTSerif-Regular.woff2') format('woff2'),url('vendor/PTSerif-Regular.ttf') format('truetype');}
+  @font-face{font-family:'PT Serif';font-style:normal;font-weight:700;font-display:swap;
+    src:url('vendor/PTSerif-Bold.woff2') format('woff2'),url('vendor/PTSerif-Bold.ttf') format('truetype');}
+  @font-face{font-family:'PT Serif';font-style:italic;font-weight:400;font-display:swap;
+    src:url('vendor/PTSerif-Italic.woff2') format('woff2'),url('vendor/PTSerif-Italic.ttf') format('truetype');}
+  @font-face{font-family:'PT Serif';font-style:italic;font-weight:700;font-display:swap;
+    src:url('vendor/PTSerif-BoldItalic.woff2') format('woff2'),url('vendor/PTSerif-BoldItalic.ttf') format('truetype');}
+</style>
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson-client.min.js"></script>
 <script src="data.js"></script>
 <style>
   :root{
@@ -791,7 +801,12 @@ function renderListView(baseData) {
 let svg, gCountries, gDots, projection, path, radiusScale;
 const width0 = 1200, height0 = 620;
 
-d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json').then(topology => {
+d3.json('vendor/countries-110m.json')
+  .catch(() => {
+    console.warn('vendor/countries-110m.json not found, falling back to the CDN');
+    return d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json');
+  })
+  .then(topology => {
   const countries = topojson.feature(topology, topology.objects.countries);
   svg = d3.select('#map').attr('viewBox', `0 0 ${width0} ${height0}`);
   projection = d3.geoNaturalEarth1().fitSize([width0 - 20, height0 - 20], countries);
@@ -1114,6 +1129,7 @@ document.getElementById('addSubmit').addEventListener('click', () => {
 
 const CURATOR_KEY = 'plorabunt_curator_token';
 const DATA_PATH   = 'data.js';
+const XLSX_LOCAL  = 'vendor/xlsx.full.min.js';
 const XLSX_CDN    = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
 
 let RULES = null;          // normalisation.json
@@ -1240,7 +1256,12 @@ async function readWorkbook(file) {
     }
     return { rows: parseCsv(text), encoding };
   }
-  await loadScriptOnce(XLSX_CDN);
+  try {
+    await loadScriptOnce(XLSX_LOCAL);
+  } catch (e) {
+    console.warn('vendor/xlsx.full.min.js not found, falling back to the CDN');
+    await loadScriptOnce(XLSX_CDN);
+  }
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array', cellDates: true });
   const ws = wb.Sheets[wb.SheetNames[0]];
