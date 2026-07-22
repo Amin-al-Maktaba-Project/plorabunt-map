@@ -1362,17 +1362,28 @@ function toBase64Utf8(str) {
 }
 
 async function gh(path, options = {}) {
-  const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/${path}`, {
-    ...options,
-    headers: {
-      'Authorization': 'Bearer ' + curToken(),
-      'Accept': 'application/vnd.github+json',
-      ...(options.headers || {})
-    }
-  });
+  const url = 'https://api.github.com/repos/' + GITHUB_REPO + (path ? '/' + path : '');
+  let res;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': 'Bearer ' + curToken(),
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(options.headers || {})
+      }
+    });
+  } catch (netErr) {
+    throw new Error('the request to api.github.com never completed. This is usually a content '
+      + 'blocker, an extension, or a network that blocks the GitHub API rather than a problem '
+      + 'with the token. Try another browser or disable blockers for this page.');
+  }
   if (!res.ok) {
     let detail = '';
     try { detail = (await res.json()).message || ''; } catch (e) {}
+    if (res.status === 401) detail = 'The token was not accepted. Check it was copied in full.';
+    if (res.status === 404) detail = 'Repository not found, or the token has no access to it.';
     throw new Error(`GitHub replied ${res.status}. ${detail}`);
   }
   return res.json();
@@ -1426,7 +1437,7 @@ document.getElementById('curSignInBtn').addEventListener('click', async () => {
   curSay('Checking the token…');
   try {
     const repo = await gh('');
-    if (!repo.permissions || !repo.permissions.push) {
+    if (!repo || !repo.permissions || !repo.permissions.push) {
       setCurToken('');
       curSay('That token can read the repository but not write to it. It needs Contents: read and write.', 'cur-err');
       return;
