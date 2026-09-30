@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Attacks on Places of Worship — A Global Record</title>
+<script>
+  /* Apply the saved theme before anything is drawn, so the page never flashes
+     in the wrong colours. Dark is the default. */
+  (function () {
+    try {
+      var t = localStorage.getItem('plorabunt_theme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
 <style>
   /* Self-hosted so the page depends on nobody. If the files are missing the
      browser falls back to Georgia, which is close enough that nothing breaks. */
@@ -23,6 +33,16 @@
   :root{
     --bg:#0a0a0a; --bg2:#111111; --line:#2a2626; --ink:#ece7e2; --ink-dim:#9a938d;
     --red:#c1272d; --red-dim:#7a1a1e; --red-glow:rgba(193,39,45,0.35);
+    --field:#141010; --pop:#151212; --track:#1c1818; --overlay:rgba(10,10,10,0.75);
+    --land:#2c2725; --land-stroke:#4a4340; --dot-stroke:#1a0a0b; --dot-selected:#ffffff;
+    --err:#ff8a8e; --ok:#7ea87e; --shadow:rgba(0,0,0,0.5);
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f3ef; --bg2:#ffffff; --line:#ddd5ce; --ink:#1d1a18; --ink-dim:#6b635d;
+    --red:#b3232a; --red-dim:#e0a3a6; --red-glow:rgba(179,35,42,0.3);
+    --field:#ffffff; --pop:#ffffff; --track:#eee6e0; --overlay:rgba(246,243,239,0.88);
+    --land:#e4ddd6; --land-stroke:#c9bfb6; --dot-stroke:#ffffff; --dot-selected:#1d1a18;
+    --err:#b3232a; --ok:#3d7a3d; --shadow:rgba(0,0,0,0.12);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;overflow:hidden;}
@@ -53,7 +73,7 @@
   .chip.active{border-color:var(--red);color:var(--ink);background:rgba(193,39,45,0.12);}
   .chip:hover{border-color:var(--red-dim);color:var(--ink);}
 
-  .segmented{display:flex;border:1px solid var(--line);border-radius:100px;overflow:hidden;width:fit-content;flex-shrink:0;}
+  .segmented{display:flex;border:1px solid var(--line);border-radius:100px;overflow:hidden;width:fit-content;flex-shrink:0;background:var(--overlay);}
   .segmented button{border:none;background:transparent;color:var(--ink-dim);font-size:11px;padding:6px 12px;cursor:pointer;letter-spacing:0.02em;white-space:nowrap;}
   .segmented button.active{background:var(--red);color:#fff;}
   .segmented button:not(.active):hover{color:var(--ink);}
@@ -61,7 +81,7 @@
   .dropdown{position:relative;width:100%;flex-shrink:0;}
   .dropdown button#relDropdownBtn,.dropdown button#modeDropdownBtn,.dropdown button#top10Btn{width:100%;text-align:left;border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:8px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .dropdown button:hover{border-color:var(--red-dim);color:var(--ink);}
-  .dropdown-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;width:260px;max-height:300px;overflow-y:auto;background:#151212;border:1px solid var(--line);border-radius:6px;padding:8px;z-index:15;}
+  .dropdown-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;width:260px;max-height:300px;overflow-y:auto;background:var(--pop);border:1px solid var(--line);border-radius:6px;padding:8px;z-index:15;box-shadow:0 8px 24px var(--shadow);}
   .dropdown-panel.open{display:block;}
   .dropdown-row{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:4px;cursor:pointer;font-size:12px;}
   .dropdown-row:hover{background:rgba(193,39,45,0.1);}
@@ -71,8 +91,8 @@
   .dropdown-action{font-size:10.5px;color:var(--red);cursor:pointer;padding:4px 6px;}
   .dropdown-action:hover{text-decoration:underline;}
 
-  #resetBtn,#aboutBtn,#curatorBtn{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:8px 12px;border-radius:100px;cursor:pointer;letter-spacing:0.02em;white-space:nowrap;width:100%;}
-  #resetBtn:hover,#aboutBtn:hover,#curatorBtn:hover{border-color:var(--red);color:var(--ink);}
+  #resetBtn,#aboutBtn,#curatorBtn,#themeBtn{border:1px solid var(--line);background:var(--overlay);color:var(--ink-dim);font-size:11.5px;padding:8px 12px;border-radius:100px;cursor:pointer;letter-spacing:0.02em;white-space:nowrap;width:100%;}
+  #resetBtn:hover,#aboutBtn:hover,#curatorBtn:hover,#themeBtn:hover{border-color:var(--red);color:var(--ink);}
   #curatorBtn{border-style:dashed;}
   #curatorOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:22;align-items:center;justify-content:center;}
   #curatorOverlay.open{display:flex;}
@@ -83,8 +103,8 @@
   #curatorModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:20px 24px 24px;font-size:12.5px;line-height:1.6;color:var(--ink-dim);}
   #curatorModal-body h4{color:var(--ink);font-size:12.5px;margin:18px 0 6px;}
   #curatorModal-body h4.cur-warn-h{color:var(--red);}
-  #curatorModal-body input[type=password],#curatorModal-body input[type=file]{background:#141010;border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;}
-  #curatorModal-body code{background:#141010;padding:1px 4px;border-radius:3px;font-size:11.5px;}
+  #curatorModal-body input[type=password],#curatorModal-body input[type=file]{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;}
+  #curatorModal-body code{background:var(--field);padding:1px 4px;border-radius:3px;font-size:11.5px;}
   .cur-note{font-size:11.5px;line-height:1.55;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:rgba(193,39,45,0.05);margin:0 0 14px;}
   .cur-line{margin:0 0 8px;}
   .cur-warn{color:var(--red);margin:8px 0;}
@@ -93,20 +113,21 @@
   .cur-d{color:var(--ink);}
   .cur-sub{color:var(--ink-dim);font-size:11px;}
   #curStatus{margin:12px 0 0;font-size:12px;}
-  #curStatus.cur-ok{color:#7ea87e;}
+  #curStatus.cur-ok{color:var(--ok);}
   #curStatus.cur-err{color:var(--red);}
   .cur-row{display:flex;gap:10px;align-items:center;margin-top:10px;}
 
   .primary-btn{border:1px solid var(--red);background:var(--red);color:#fff;font-size:11.5px;font-weight:600;padding:9px 12px;border-radius:6px;cursor:pointer;letter-spacing:0.02em;white-space:nowrap;width:100%;}
   .primary-btn:hover{background:#a51f24;}
 
-  #searchInput{background:#141010;border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;}
+  #searchInput{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;}
   #searchInput:focus{outline:none;border-color:var(--red);}
   #searchInput::placeholder{color:var(--ink-dim);}
   .yr-row{display:flex;align-items:center;gap:6px;}
-  .yr-input{background:#141010;border:1px solid var(--line);color:var(--ink);font-size:12px;padding:6px 6px;border-radius:4px;width:60px;flex-shrink:0;}
+  .yr-input{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12px;padding:6px 6px;border-radius:4px;width:60px;flex-shrink:0;}
   .yr-input:focus{outline:none;border-color:var(--red);}
-  .date-input{background:#141010;border:1px solid var(--line);color:var(--ink);font-size:11px;padding:6px 6px;border-radius:4px;width:112px;flex-shrink:0;}
+  .date-input{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:11px;padding:6px 6px;border-radius:4px;width:112px;flex-shrink:0;color-scheme:dark;}
+  :root[data-theme="light"] .date-input{color-scheme:light;}
   .date-input:focus{outline:none;border-color:var(--red);}
   #searchClear{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:12px;padding:7px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
   #searchClear:hover{border-color:var(--red);color:var(--ink);}
@@ -114,41 +135,51 @@
   #mapControls{position:absolute;top:16px;right:16px;z-index:8;transition:right .2s ease;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end;max-width:calc(55% - 24px);}
   main.panel-open #mapControls{right:calc(max(280px,min(400px,42vw)) + 16px);max-width:calc(45% - 24px);}
   #mapControlsLeft{position:absolute;top:16px;left:16px;z-index:8;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;max-width:calc(45% - 24px);}
-  #mapControls .segmented{background:rgba(10,10,10,0.75);}
 
-  #top10Panel{background:#151212;width:280px;}
+  #zoomControls{position:absolute;bottom:16px;right:16px;z-index:8;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--overlay);transition:right .2s ease;}
+  main.panel-open #zoomControls{right:calc(max(280px,min(400px,42vw)) + 16px);}
+  #zoomControls button{border:none;background:transparent;color:var(--ink-dim);font-size:15px;line-height:1;width:32px;height:32px;cursor:pointer;}
+  #zoomControls button + button{border-top:1px solid var(--line);}
+  #zoomControls button:hover{color:var(--ink);background:rgba(193,39,45,0.12);}
+  #zoomControls button#zoomReset{font-size:12px;}
+
+  #top10Panel{background:var(--pop);width:280px;}
   .t10-row{display:flex;align-items:center;gap:8px;margin:7px 0;cursor:pointer;}
   .t10-row .name{font-size:11px;width:100px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .t10-row .bar-wrap{flex:1;background:#1c1818;border-radius:2px;height:8px;overflow:hidden;}
+  .t10-row .bar-wrap{flex:1;background:var(--track);border-radius:2px;height:8px;overflow:hidden;}
   .t10-row .bar{background:var(--red);height:100%;}
-  .t10-row .val{font-size:11px;color:var(--ink-dim);width:28px;text-align:right;flex-shrink:0;}
+  .t10-row .val{font-size:11px;color:var(--ink-dim);width:40px;text-align:right;flex-shrink:0;}
   .t10-row:hover .name{color:var(--red);}
 
   #pagefooter{padding:8px 28px;border-top:1px solid var(--line);font-size:9.5px;color:var(--ink-dim);flex-shrink:0;line-height:1.4;}
 
-  main{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;}
+  main{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0;position:relative;}
   main > #map-wrap, main > #listView{flex:1;}
   #map-wrap{flex:1;position:relative;overflow:hidden;min-height:0;}
-  svg#map{width:100%;height:100%;display:block;}
-  .country{fill:#2c2725;stroke:#4a4340;stroke-width:0.6;}
+  svg#map{width:100%;height:100%;display:block;cursor:grab;}
+  svg#map:active{cursor:grabbing;}
+  .country{fill:var(--land);stroke:var(--land-stroke);stroke-width:0.6;vector-effect:non-scaling-stroke;}
   .country.dimmed{opacity:0.35;}
-  circle.dot{fill-opacity:0.85;stroke:#1a0a0b;stroke-width:0.6;cursor:pointer;transition:fill-opacity .15s;}
+  circle.dot{fill-opacity:0.85;stroke:var(--dot-stroke);stroke-width:0.6;vector-effect:non-scaling-stroke;cursor:pointer;transition:fill-opacity .15s;}
   circle.dot:hover{fill-opacity:1;filter:drop-shadow(0 0 6px var(--red-glow));}
-  circle.dot.selected{fill-opacity:1;stroke:#fff;stroke-width:1.2;}
+  circle.dot.selected{fill-opacity:1;stroke:var(--dot-selected);stroke-width:1.2;}
 
-  #tooltip{position:absolute;pointer-events:none;background:#151212;border:1px solid var(--red-dim);padding:8px 12px;font-size:12px;border-radius:3px;opacity:0;transition:opacity .1s;max-width:220px;line-height:1.5;z-index:5;}
+  #tooltip{position:absolute;pointer-events:none;background:var(--pop);border:1px solid var(--red-dim);padding:8px 12px;font-size:12px;border-radius:3px;opacity:0;transition:opacity .1s;max-width:220px;line-height:1.5;z-index:5;box-shadow:0 4px 14px var(--shadow);}
   #tooltip b{font-family:'PT Serif',Georgia,serif;font-size:13px;}
   #tooltip .cnt{color:var(--red);}
 
-  #legend{background:rgba(10,10,10,0.7);border:1px solid var(--line);padding:12px 16px;border-radius:4px;font-size:10px;color:var(--ink-dim);max-width:230px;}
+  #legend{background:var(--overlay);border:1px solid var(--line);padding:12px 16px;border-radius:4px;font-size:10px;color:var(--ink-dim);max-width:230px;}
+  #legend svg text{fill:var(--ink-dim);font-size:10px;}
+  #legend svg line{stroke:var(--ink-dim);stroke-width:0.6;}
+  #legend svg circle{fill:none;stroke:var(--red);stroke-width:1;}
   #sourcesBanner{padding:8px 24px;border-top:1px solid var(--line);font-size:10.5px;color:var(--ink-dim);line-height:1.4;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:3;}
   #sourcesBanner strong{color:var(--ink);}
   #legend .row{display:flex;align-items:center;gap:8px;margin:5px 0;}
-  #legend svg{overflow:visible;}
+  #legend svg{overflow:visible;display:block;}
   #legend .title{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;color:var(--ink-dim);}
 
   aside#panel{--panel-w:max(280px,min(400px,42vw));position:absolute;top:0;right:0;height:100%;z-index:9;width:0;overflow:hidden;border-left:1px solid var(--line);background:var(--bg2);transition:width .2s ease;display:flex;flex-direction:column;}
-  aside#panel.open{width:max(280px,min(400px,42vw));box-shadow:-18px 0 40px rgba(0,0,0,0.5);}
+  aside#panel.open{width:max(280px,min(400px,42vw));box-shadow:-18px 0 40px var(--shadow);}
   #panel-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);flex-shrink:0;position:relative;}
   #panel-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0 0 4px;}
   #panel-head .meta{font-size:11px;color:var(--ink-dim);}
@@ -178,7 +209,7 @@
   table#listTable tbody td.num{color:var(--red);text-align:right;}
 
   ::-webkit-scrollbar{width:8px;}
-  ::-webkit-scrollbar-thumb{background:#2a2626;border-radius:4px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
 
   #aboutOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:21;align-items:center;justify-content:center;}
@@ -202,7 +233,7 @@
   .dl-btn{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:7px 13px;border-radius:100px;cursor:pointer;white-space:nowrap;}
   .dl-btn:hover{border-color:var(--red);color:var(--ink);}
   .dl-note{font-size:11px;color:var(--ink-dim);}
-  .cite-box{background:#141010;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;padding:12px 14px;font-size:11.5px;line-height:1.6;color:var(--ink);margin:0 0 10px;}
+  .cite-box{background:var(--field);border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;padding:12px 14px;font-size:11.5px;line-height:1.6;color:var(--ink);margin:0 0 10px;}
   .todo{color:var(--red);}
   #addOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:20;align-items:center;justify-content:center;}
   #addOverlay.open{display:flex;}
@@ -213,18 +244,18 @@
   #addModal-head button:hover,#aboutModal-head button:hover{color:var(--ink);}
   #addModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px;}
   .review-note{font-size:11.5px;line-height:1.55;color:var(--ink-dim);margin:0 0 4px;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:rgba(193,39,45,0.05);}
-  #addModal-body textarea{background:#141010;border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;resize:vertical;}
+  #addModal-body textarea{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;resize:vertical;}
   #addModal-body textarea:focus{outline:none;border-color:var(--red);}
   #addError a{color:var(--red);text-decoration:underline;}
   .field{display:flex;flex-direction:column;gap:6px;flex:1;}
   .field label{font-size:10.5px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);}
-  .field input,.field select{background:#141010;border:1px solid var(--line);color:var(--ink);font-size:13px;padding:8px 10px;border-radius:4px;font-family:inherit;}
+  .field input,.field select{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:13px;padding:8px 10px;border-radius:4px;font-family:inherit;}
   .field input:focus,.field select:focus{outline:none;border-color:var(--red);}
   .field input[type="file"]{padding:7px;font-size:12px;color:var(--ink-dim);}
   .file-name{font-size:11.5px;color:var(--red);}
   .field-row{display:flex;gap:14px;}
   .sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);font-size:9.5px;color:var(--ink-dim);line-height:1.4;}
-  #addError{color:#ff8a8e;font-size:12px;min-height:16px;}
+  #addError{color:var(--err);font-size:12px;min-height:16px;}
   #addModal-foot{flex:0 0 auto;background:var(--bg2);display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line);}
   #addModal-foot button{font-size:12.5px;padding:9px 16px;border-radius:6px;cursor:pointer;letter-spacing:0.02em;}
   #addCancel{background:transparent;border:1px solid var(--line);color:var(--ink-dim);}
@@ -263,7 +294,7 @@
       <div class="stat"><div class="n" id="statCountries">–</div><div class="l">Countries</div></div>
       <div class="stat"><div class="n" style="font-size:15px;">1982–2026</div><div class="l">Span</div></div>
     </div>
-    <div id="showingLine">Showing all 1,667 incidents</div>
+    <div id="showingLine">Showing all incidents</div>
 
     <div class="panel-section">
       <div class="section-title">Search</div>
@@ -327,11 +358,17 @@
     <div id="mapControls">
       <button id="addCaseBtn" class="primary-btn" style="width:auto;">+ Submit a case</button>
       <button id="aboutBtn" style="width:auto;">About</button>
+      <button id="themeBtn" style="width:auto;" title="Switch between light and dark">Light</button>
       <button id="curatorBtn" style="width:auto;display:none;">Curator</button>
     </div>
     <div id="map-wrap">
       <svg id="map"></svg>
       <div id="tooltip"></div>
+      <div id="zoomControls">
+        <button id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+        <button id="zoomReset" title="Show the whole world" aria-label="Reset zoom">⟲</button>
+      </div>
     </div>
     <div id="listView">
       <div id="listView-head">
@@ -570,6 +607,31 @@
 ------------------------------------------------------------------ */
 const GITHUB_REPO = 'Amin-al-Maktaba-Project/plorabunt-map';
 
+/* Numbers are always written the British way (1,661), whatever the
+   language of the visitor's browser. */
+const fmtN = n => Number(n).toLocaleString('en-GB');
+
+/* ---------------- Light and dark themes ---------------- */
+const THEME_KEY = 'plorabunt_theme';
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+function updateThemeButton() {
+  document.getElementById('themeBtn').textContent = currentTheme() === 'light' ? '☾ Dark' : '☀ Light';
+}
+/* Dot colours for each theme: light end for few victims, dark end for many. */
+function dotColourRange() {
+  return currentTheme() === 'light' ? ['#e8a0a3', '#6e0f14'] : ['#c4585c', '#3d0a0d'];
+}
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const next = currentTheme() === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  updateThemeButton();
+  render();
+});
+updateThemeButton();
+
 const RELIGIONS = Array.from(new Set(window.PLORABUNT_DATA.map(d => (d.relRaw||'Unknown').trim()))).sort((a,b)=>{
   const ca = window.PLORABUNT_DATA.filter(d=>(d.relRaw||'Unknown').trim()===a).length;
   const cb = window.PLORABUNT_DATA.filter(d=>(d.relRaw||'Unknown').trim()===b).length;
@@ -604,7 +666,7 @@ function updateRelBtnLabel() {
   relBtn.textContent = (activeReligions.size === RELIGIONS.length ? 'All religions' : activeReligions.size === 0 ? 'None selected' : `${activeReligions.size} selected`) + ' ▾';
 }
 relPanel.innerHTML = `<div class="dropdown-action" id="relAll">Select all</div><div class="dropdown-action" id="relNone">Clear all</div><div class="dropdown-sep"></div>` +
-  RELIGIONS.map(r => `<label class="dropdown-row"><input type="checkbox" checked data-rel="${r}"><span>${r}</span><span class="cnt">${religionCount(r)}</span></label>`).join('');
+  RELIGIONS.map(r => `<label class="dropdown-row"><input type="checkbox" checked data-rel="${r}"><span>${r}</span><span class="cnt">${fmtN(religionCount(r))}</span></label>`).join('');
 relPanel.querySelectorAll('input[data-rel]').forEach(cb => {
   cb.addEventListener('change', () => {
     const r = cb.dataset.rel;
@@ -634,7 +696,7 @@ function updateModeBtnLabel() {
   modeBtn.textContent = (activeModes.size === MODES.length ? 'All modes' : activeModes.size === 0 ? 'None selected' : `${activeModes.size} selected`) + ' ▾';
 }
 modePanel.innerHTML = `<div class="dropdown-action" id="modeAll">Select all</div><div class="dropdown-action" id="modeNone">Clear all</div><div class="dropdown-sep"></div>` +
-  MODES.map(m => `<label class="dropdown-row"><input type="checkbox" checked data-mode="${m}"><span>${m}</span><span class="cnt">${modeCount(m)}</span></label>`).join('');
+  MODES.map(m => `<label class="dropdown-row"><input type="checkbox" checked data-mode="${m}"><span>${m}</span><span class="cnt">${fmtN(modeCount(m))}</span></label>`).join('');
 modePanel.querySelectorAll('input[data-mode]').forEach(cb => {
   cb.addEventListener('change', () => {
     const m = cb.dataset.mode;
@@ -735,6 +797,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   document.querySelectorAll('#metricToggle button').forEach(x=>x.classList.toggle('active', x.dataset.metric==='incidents'));
   selectedCountry = null;
   document.getElementById('panel').classList.remove('open');
+  resetZoom();
   render();
 });
 
@@ -787,7 +850,7 @@ function fmtDate(d) {
 function renderListView(baseData) {
   if (viewMode !== 'list') return;
   const rows = (isSearchActive() ? searchResults() : baseData).slice().sort((a,b)=>b.y-a.y);
-  document.getElementById('listView-meta').textContent = `${rows.length.toLocaleString()} incident${rows.length===1?'':'s'}${isSearchActive() ? ` matching \u201c${searchQuery.trim()}\u201d` : ''}`;
+  document.getElementById('listView-meta').textContent = `${fmtN(rows.length)} incident${rows.length===1?'':'s'}${isSearchActive() ? ` matching \u201c${searchQuery.trim()}\u201d` : ''}`;
   const idxOffset = window.__incidentRegistry.length;
   rows.forEach(it => window.__incidentRegistry.push(it));
   const body = document.getElementById('listView-body');
@@ -809,8 +872,29 @@ function renderListView(baseData) {
   });
 }
 
-let svg, gCountries, gDots, projection, path, radiusScale;
-const width0 = 1200, height0 = 620;
+let svg, gZoom, gCountries, gDots, projection, path, radiusScale, zoomBehavior;
+let zoomK = 1;
+const width0 = 1200, height0 = 560;
+
+/* ---------------- Zoom and pan ----------------
+   Dots keep the same size on screen while the map is enlarged, so that
+   zooming separates crowded regions instead of simply magnifying the pile. */
+function applyZoom(ev) {
+  zoomK = ev.transform.k;
+  gZoom.attr('transform', ev.transform);
+  gDots.selectAll('circle.dot').attr('r', d => d.r / zoomK);
+}
+function zoomBy(factor) {
+  if (!svg) return;
+  svg.transition().duration(250).call(zoomBehavior.scaleBy, factor);
+}
+function resetZoom() {
+  if (!svg) return;
+  svg.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity);
+}
+document.getElementById('zoomIn').addEventListener('click', () => zoomBy(1.6));
+document.getElementById('zoomOut').addEventListener('click', () => zoomBy(1 / 1.6));
+document.getElementById('zoomReset').addEventListener('click', resetZoom);
 
 d3.json('vendor/countries-110m.json')
   .catch(() => {
@@ -819,12 +903,16 @@ d3.json('vendor/countries-110m.json')
   })
   .then(topology => {
   const countries = topojson.feature(topology, topology.objects.countries);
+  // Antarctica holds no records and takes a fifth of the height; leave it out.
+  countries.features = countries.features.filter(f => f.properties.name !== 'Antarctica' && f.id !== '010');
+
   svg = d3.select('#map').attr('viewBox', `0 0 ${width0} ${height0}`);
   projection = d3.geoNaturalEarth1().fitSize([width0 - 20, height0 - 20], countries);
   projection.translate([projection.translate()[0] + 10, projection.translate()[1] + 10]);
   path = d3.geoPath(projection);
 
-  gCountries = svg.append('g');
+  gZoom = svg.append('g');
+  gCountries = gZoom.append('g');
   gCountries.selectAll('path').data(countries.features).enter().append('path')
     .attr('class','country').attr('d', path);
 
@@ -838,20 +926,27 @@ d3.json('vendor/countries-110m.json')
   const knownCountries = Array.from(new Set(window.PLORABUNT_DATA.map(d=>d.country))).sort();
   countryList.innerHTML = knownCountries.map(c=>`<option value="${c}"></option>`).join('');
 
-  gDots = svg.append('g');
+  gDots = gZoom.append('g');
+
+  zoomBehavior = d3.zoom()
+    .scaleExtent([1, 10])
+    .translateExtent([[0, 0], [width0, height0]])
+    .on('zoom', applyZoom);
+  svg.call(zoomBehavior).on('dblclick.zoom', null);
+
   render();
 });
 
 function render() {
   if (!projection) return;
   const data = filteredData();
-  document.getElementById('statIncidents').textContent = data.length.toLocaleString();
+  document.getElementById('statIncidents').textContent = fmtN(data.length);
   const countriesSet = new Set(data.map(d=>d.cc));
-  document.getElementById('statCountries').textContent = countriesSet.size;
+  document.getElementById('statCountries').textContent = fmtN(countriesSet.size);
   const total = window.PLORABUNT_DATA.length;
   document.getElementById('showingLine').innerHTML = data.length === total
-    ? `Showing all <strong>${total.toLocaleString()}</strong> incidents`
-    : `Showing <strong>${data.length.toLocaleString()}</strong> of ${total.toLocaleString()} incidents`;
+    ? `Showing all <strong>${fmtN(total)}</strong> incidents`
+    : `Showing <strong>${fmtN(data.length)}</strong> of ${fmtN(total)} incidents`;
 
   const byCountry = d3.rollup(data, v => v, d => d.cc);
   const valueOf = items => metric === 'victims' ? d3.sum(items, i=>i.vicN) : items.length;
@@ -865,23 +960,31 @@ function render() {
     if (!c) return null;
     const p = projection(c);
     if (!p) return null;
-    return { name, items, count: valueOf(items), vic: d3.sum(items, i=>i.vicN), x: p[0], y: p[1] };
+    const count = valueOf(items);
+    return { name, items, count, vic: d3.sum(items, i=>i.vicN), x: p[0], y: p[1],
+             r: Math.max(radiusScale(count), count > 0 ? 2.5 : 0) };
   }).filter(Boolean).sort((a,b)=>b.count-a.count);
 
   const maxVic = d3.max(dotData, d=>d.vic) || 1;
-  const colorScale = d3.scaleSqrt().domain([0, maxVic]).range(['#c4585c', '#3d0a0d']).clamp(true);
+  const colorScale = d3.scaleSqrt().domain([0, maxVic]).range(dotColourRange()).clamp(true);
+  // When size already shows victims killed, colour would only repeat it,
+  // so the dots take a single shade and the size carries the reading.
+  const fillFor = d => metric === 'victims'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--red').trim()
+    : (d.vic > 0 ? colorScale(d.vic) : '#8a8580');
 
   const sel = gDots.selectAll('circle.dot').data(dotData, d=>d.name);
   sel.exit().remove();
   const merged = sel.enter().append('circle').attr('class','dot').merge(sel);
   merged
     .attr('cx', d=>d.x).attr('cy', d=>d.y)
-    .attr('r', d=>Math.max(radiusScale(d.count), d.count>0?2.5:0))
-    .attr('fill', d=>d.vic>0 ? colorScale(d.vic) : '#8a8580')
+    .attr('r', d=>d.r / zoomK)
+    .attr('fill', fillFor)
     .classed('selected', d=>d.name===selectedCountry)
     .on('mousemove', (ev,d) => showTooltip(ev,d))
     .on('mouseleave', hideTooltip)
     .on('click', (ev,d) => openPanel(d));
+  merged.order();
 
   drawLegend(maxCount);
   drawTop10(dotData);
@@ -904,7 +1007,7 @@ function drawTop10(dotData) {
     <div class="t10-row" data-name="${d.name}">
       <div class="name">${d.name}</div>
       <div class="bar-wrap"><div class="bar" style="width:${(d.count/max*100).toFixed(0)}%"></div></div>
-      <div class="val">${d.count}</div>
+      <div class="val">${fmtN(d.count)}</div>
     </div>
   `).join('');
   list.querySelectorAll('.t10-row').forEach(row => {
@@ -918,7 +1021,7 @@ function drawTop10(dotData) {
 function showTooltip(ev, d) {
   const tt = document.getElementById('tooltip');
   const rect = document.getElementById('map-wrap').getBoundingClientRect();
-  tt.innerHTML = `<b>${d.name}</b><br><span class="cnt">${d.count}</span> ${metric==='victims' ? 'victims killed (approx.)' : 'incident'+(d.count===1?'':'s')+' recorded'}`;
+  tt.innerHTML = `<b>${d.name}</b><br><span class="cnt">${fmtN(d.count)}</span> ${metric==='victims' ? 'victims killed (approx.)' : 'incident'+(d.count===1?'':'s')+' recorded'}`;
   tt.style.left = (ev.clientX - rect.left + 14) + 'px';
   tt.style.top = (ev.clientY - rect.top + 10) + 'px';
   tt.style.opacity = 1;
@@ -982,7 +1085,7 @@ document.getElementById('detailOverlay').addEventListener('click', e => { if (e.
 
 function fillPanel(d) {
   document.getElementById('panel-country').textContent = d.name;
-  document.getElementById('panel-meta').textContent = `${d.items.length} incident${d.items.length===1?'':'s'} recorded, ${yearFrom}–${yearTo}`;
+  document.getElementById('panel-meta').textContent = `${fmtN(d.items.length)} incident${d.items.length===1?'':'s'} recorded, ${yearFrom}–${yearTo}`;
   const list = document.getElementById('panel-list');
   const items = d.items.slice().sort((a,b)=>a.y-b.y);
   list.innerHTML = items.map(it => incidentCard(it, false)).join('');
@@ -995,30 +1098,50 @@ function renderSearchPanel() {
   const parts = [];
   if (searchQuery.trim()) parts.push(`“${searchQuery.trim()}”`);
   parts.push(`${yearFrom}–${yearTo}`);
-  document.getElementById('panel-meta').textContent = `${results.length} match${results.length===1?'':'es'} · ${parts.join(' · ')}`;
+  document.getElementById('panel-meta').textContent = `${fmtN(results.length)} match${results.length===1?'':'es'} · ${parts.join(' · ')}`;
   document.getElementById('panel-list').innerHTML = results.map(it => incidentCard(it, true)).join('') || '<div id="panel-empty">No incidents match this search.</div>';
 }
 
+/* Legend: nested circles sharing a baseline, each labelled beside its top
+   edge with a short guide line. Labels are pushed apart when circles are
+   close in size, so they never print on top of one another. */
 function drawLegend(maxCount) {
   const legend = document.getElementById('legend');
-  const steps = [Math.max(1,Math.round(maxCount*0.15)), Math.round(maxCount*0.5), maxCount].filter((v,i,a)=>a.indexOf(v)===i);
+  const steps = [maxCount, Math.round(maxCount*0.5), Math.max(1,Math.round(maxCount*0.15))]
+    .filter((v,i,a)=>a.indexOf(v)===i && v > 0);
   const maxR = radiusScale(maxCount);
-  const svgH = maxR*2 + 10;
-  legend.innerHTML = `<div class="title">${metric==='victims' ? 'Victims killed per country (approx.)' : 'Incidents per country'}</div>
-    <svg width="90" height="${svgH}" style="overflow:visible;">
-      ${steps.map((s,i)=>{
-        const r = radiusScale(s);
-        const cy = svgH - r - 2;
-        return `<circle cx="20" cy="${cy}" r="${r}" fill="none" stroke="#c1272d" stroke-width="1"></circle>
-                <text x="46" y="${cy+4}" fill="#9a938d" font-size="10">${s}</text>`;
-      }).join('')}
-    </svg>
-    <div class="title" style="margin-top:10px;">Color: victims killed</div>
+  const cx = maxR + 2;
+  const base = maxR * 2 + 4;
+  const labelX = cx + maxR + 14;
+  const minGap = 12;
+
+  let prevY = -Infinity;
+  const items = steps.map(s => {
+    const r = radiusScale(s);
+    const top = base - 2 * r;
+    const ly = Math.max(top, prevY + minGap);
+    prevY = ly;
+    return { s, r, top, ly };
+  });
+  const svgH = Math.max(base, prevY + 4) + 2;
+  const svgW = labelX + 44;
+
+  const [cFew, cMany] = dotColourRange();
+  const colourKey = metric === 'victims' ? '' : `
+    <div class="title" style="margin-top:12px;">Colour: victims killed</div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <span style="font-size:10px;color:#9a938d;">Few</span>
-      <div style="width:70px;height:8px;border-radius:2px;background:linear-gradient(90deg,#c4585c,#3d0a0d);"></div>
-      <span style="font-size:10px;color:#9a938d;">Many</span>
+      <span>Few</span>
+      <div style="width:70px;height:8px;border-radius:2px;background:linear-gradient(90deg,${cFew},${cMany});"></div>
+      <span>Many</span>
     </div>`;
+
+  legend.innerHTML = `<div class="title">${metric==='victims' ? 'Victims killed per country (approx.)' : 'Incidents per country'}</div>
+    <svg width="${svgW}" height="${svgH}">
+      ${items.map(it => `
+        <circle cx="${cx}" cy="${base - it.r}" r="${it.r}"></circle>
+        <line x1="${cx}" y1="${it.top}" x2="${labelX - 4}" y2="${it.ly}"></line>
+        <text x="${labelX}" y="${it.ly + 3.5}">${fmtN(it.s)}</text>`).join('')}
+    </svg>${colourKey}`;
 }
 
 const addOverlay = document.getElementById('addOverlay');
@@ -1178,7 +1301,7 @@ document.getElementById('dlCsv').addEventListener('click', () => {
     // on a European locale instead of dumping everything into one column.
     const csv = '\ufeff' + exportRows().map(r => r.map(esc).join(';')).join('\r\n');
     saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), exportName('csv'));
-    note.textContent = window.PLORABUNT_DATA.length + ' records';
+    note.textContent = fmtN(window.PLORABUNT_DATA.length) + ' records';
   } catch (e) {
     note.textContent = 'Export failed: ' + e.message;
   }
@@ -1194,7 +1317,7 @@ document.getElementById('dlXlsx').addEventListener('click', async () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Plorabunt');
     XLSX.writeFile(wb, exportName('xlsx'));
-    note.textContent = window.PLORABUNT_DATA.length + ' records';
+    note.textContent = fmtN(window.PLORABUNT_DATA.length) + ' records';
   } catch (e) {
     note.textContent = 'Export failed: ' + e.message;
   }
@@ -1596,8 +1719,8 @@ function renderCuratorReport(report, incoming, encoding, file) {
   const el = document.getElementById('curReport');
   const parts = [];
 
-  parts.push(`<p class="cur-line"><strong>${incoming.records.length}</strong> usable rows read from
-    <em>${esc(file.name)}</em>. The map currently holds <strong>${window.PLORABUNT_DATA.length}</strong> records.</p>`);
+  parts.push(`<p class="cur-line"><strong>${fmtN(incoming.records.length)}</strong> usable rows read from
+    <em>${esc(file.name)}</em>. The map currently holds <strong>${fmtN(window.PLORABUNT_DATA.length)}</strong> records.</p>`);
 
   if (encoding === 'windows-1252') {
     parts.push(`<p class="cur-warn">This CSV is not UTF-8. Characters outside the Latin alphabet,
@@ -1670,7 +1793,7 @@ document.getElementById('curPublish').addEventListener('click', async () => {
         'Update source workbook (curator panel)', true);
     }
 
-    curSay(`Published. ${n} record${n === 1 ? '' : 's'} added, ${pendingResult.records.length} in total.
+    curSay(`Published. ${n} record${n === 1 ? '' : 's'} added, ${fmtN(pendingResult.records.length)} in total.
       The public map updates within a minute or two. Reload with Cmd+Shift+R to see it.`, 'cur-ok');
     document.getElementById('curPublish').style.display = 'none';
     pendingResult = null;
