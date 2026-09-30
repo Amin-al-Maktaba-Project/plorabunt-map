@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attacks on Places of Worship — A Global Record</title>
+<script>
+  /* Apply the saved theme before anything is drawn, so the page never flashes
+     in the wrong colours. Dark is the default. */
+  (function () {
+    try {
+      var t = localStorage.getItem('plorabunt_theme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<style>
+  /* Self-hosted so the page depends on nobody. If the files are missing the
+     browser falls back to Georgia, which is close enough that nothing breaks. */
+  @font-face{font-family:'PT Serif';font-style:normal;font-weight:400;font-display:swap;
+    src:url('vendor/PTSerif-Regular.woff2') format('woff2'),url('vendor/PTSerif-Regular.ttf') format('truetype');}
+  @font-face{font-family:'PT Serif';font-style:normal;font-weight:700;font-display:swap;
+    src:url('vendor/PTSerif-Bold.woff2') format('woff2'),url('vendor/PTSerif-Bold.ttf') format('truetype');}
+  @font-face{font-family:'PT Serif';font-style:italic;font-weight:400;font-display:swap;
+    src:url('vendor/PTSerif-Italic.woff2') format('woff2'),url('vendor/PTSerif-Italic.ttf') format('truetype');}
+  @font-face{font-family:'PT Serif';font-style:italic;font-weight:700;font-display:swap;
+    src:url('vendor/PTSerif-BoldItalic.woff2') format('woff2'),url('vendor/PTSerif-BoldItalic.ttf') format('truetype');}
+</style>
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson-client.min.js"></script>
+<script src="data.js"></script>
+<style>
+  :root{
+    --bg:#0a0a0a; --bg2:#111111; --line:#2a2626; --ink:#ece7e2; --ink-dim:#9a938d;
+    --red:#c1272d; --red-dim:#7a1a1e; --red-glow:rgba(193,39,45,0.35);
+    --field:#141010; --pop:#151212; --track:#1c1818; --overlay:rgba(10,10,10,0.75);
+    --land:#2c2725; --land-stroke:#4a4340; --dot-stroke:#1a0a0b; --dot-selected:#ffffff;
+    --err:#ff8a8e; --ok:#7ea87e; --shadow:rgba(0,0,0,0.5);
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f3ef; --bg2:#ffffff; --line:#ddd5ce; --ink:#1d1a18; --ink-dim:#6b635d;
+    --red:#b3232a; --red-dim:#e0a3a6; --red-glow:rgba(179,35,42,0.3);
+    --field:#ffffff; --pop:#ffffff; --track:#eee6e0; --overlay:rgba(246,243,239,0.88);
+    --land:#e4ddd6; --land-stroke:#c9bfb6; --dot-stroke:#ffffff; --dot-selected:#1d1a18;
+    --err:#b3232a; --ok:#3d7a3d; --shadow:rgba(0,0,0,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;overflow:hidden;}
+  a{color:var(--red);}
+  a:hover{color:#e8555b;}
+  #app{display:flex;flex-direction:row;height:100vh;}
+
+  #sidebar{width:280px;flex-shrink:0;border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;padding:20px 20px 16px;gap:16px;}
+  .brand{line-height:1;}
+  .brand .kicker{font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--red);margin-bottom:5px;display:block;}
+  .brand h1{font-family:'PT Serif',Georgia,serif;font-weight:700;font-size:36px;margin:0;letter-spacing:0.2px;}
+
+  .stats{display:flex;gap:6px;border-top:1px solid var(--line);padding:12px 0 10px;}
+  .stat{flex:1;}
+  .stat .n{font-family:'PT Serif',Georgia,serif;font-size:19px;color:var(--red);line-height:1;white-space:nowrap;}
+  .stat .l{font-size:8.5px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);margin-top:3px;}
+  #showingLine{font-size:10.5px;color:var(--ink-dim);padding-bottom:12px;border-bottom:1px solid var(--line);margin-top:-6px;}
+  #showingLine strong{color:var(--ink);font-weight:600;}
+
+  .panel-section{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line);}
+  .panel-section:first-of-type{border-top:none;padding-top:0;}
+  .section-title{font-size:9.5px;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-dim);white-space:nowrap;}
+  .ctrl-row{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;}
+  .ctrl-block{display:flex;flex-direction:column;gap:6px;}
+  .ctrl-label{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);white-space:nowrap;}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11px;padding:5px 10px;border-radius:100px;cursor:pointer;transition:all .15s;letter-spacing:0.02em;}
+  .chip.active{border-color:var(--red);color:var(--ink);background:rgba(193,39,45,0.12);}
+  .chip:hover{border-color:var(--red-dim);color:var(--ink);}
+
+  .segmented{display:flex;border:1px solid var(--line);border-radius:100px;overflow:hidden;width:fit-content;flex-shrink:0;background:var(--overlay);}
+  .segmented button{border:none;background:transparent;color:var(--ink-dim);font-size:11px;padding:6px 12px;cursor:pointer;letter-spacing:0.02em;white-space:nowrap;}
+  .segmented button.active{background:var(--red);color:#fff;}
+  .segmented button:not(.active):hover{color:var(--ink);}
+
+  .dropdown{position:relative;width:100%;flex-shrink:0;}
+  .dropdown button#relDropdownBtn,.dropdown button#modeDropdownBtn,.dropdown button#top10Btn{width:100%;text-align:left;border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:8px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dropdown button:hover{border-color:var(--red-dim);color:var(--ink);}
+  .dropdown-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;width:260px;max-height:300px;overflow-y:auto;background:var(--pop);border:1px solid var(--line);border-radius:6px;padding:8px;z-index:15;box-shadow:0 8px 24px var(--shadow);}
+  .dropdown-panel.open{display:block;}
+  .dropdown-row{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:4px;cursor:pointer;font-size:12px;}
+  .dropdown-row:hover{background:rgba(193,39,45,0.1);}
+  .dropdown-row input{accent-color:var(--red);}
+  .dropdown-row .cnt{margin-left:auto;color:var(--ink-dim);font-size:10.5px;}
+  .dropdown-sep{border-top:1px solid var(--line);margin:6px 0;}
+  .dropdown-action{font-size:10.5px;color:var(--red);cursor:pointer;padding:4px 6px;}
+  .dropdown-action:hover{text-decoration:underline;}
+
+  #resetBtn,#aboutBtn,#curatorBtn,#themeBtn{border:1px solid var(--line);background:var(--overlay);color:var(--ink-dim);font-size:11.5px;padding:8px 12px;border-radius:100px;cursor:pointer;letter-spacing:0.02em;white-space:nowrap;width:100%;}
+  #resetBtn:hover,#aboutBtn:hover,#curatorBtn:hover,#themeBtn:hover{border-color:var(--red);color:var(--ink);}
+  #curatorBtn{border-style:dashed;}
+  #curatorOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:22;align-items:center;justify-content:center;}
+  #curatorOverlay.open{display:flex;}
+  #curatorModal{width:660px;max-width:calc(100vw - 32px);max-height:min(90vh,920px);overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
+  #curatorModal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line);}
+  #curatorModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0;}
+  #curatorModal-head button{background:none;border:none;color:var(--ink-dim);font-size:18px;cursor:pointer;}
+  #curatorModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:20px 24px 24px;font-size:12.5px;line-height:1.6;color:var(--ink-dim);}
+  #curatorModal-body h4{color:var(--ink);font-size:12.5px;margin:18px 0 6px;}
+  #curatorModal-body h4.cur-warn-h{color:var(--red);}
+  #curatorModal-body input[type=password],#curatorModal-body input[type=file]{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;}
+  #curatorModal-body code{background:var(--field);padding:1px 4px;border-radius:3px;font-size:11.5px;}
+  .cur-note{font-size:11.5px;line-height:1.55;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:rgba(193,39,45,0.05);margin:0 0 14px;}
+  .cur-line{margin:0 0 8px;}
+  .cur-warn{color:var(--red);margin:8px 0;}
+  .cur-list{margin:6px 0 12px;padding-left:16px;max-height:230px;overflow-y:auto;font-size:11.5px;}
+  .cur-list li{margin-bottom:5px;}
+  .cur-d{color:var(--ink);}
+  .cur-sub{color:var(--ink-dim);font-size:11px;}
+  #curStatus{margin:12px 0 0;font-size:12px;}
+  #curStatus.cur-ok{color:var(--ok);}
+  #curStatus.cur-err{color:var(--red);}
+  .cur-row{display:flex;gap:10px;align-items:center;margin-top:10px;}
+
+  .primary-btn{border:1px solid var(--red);background:var(--red);color:#fff;font-size:11.5px;font-weight:600;padding:9px 12px;border-radius:6px;cursor:pointer;letter-spacing:0.02em;white-space:nowrap;width:100%;}
+  .primary-btn:hover{background:#a51f24;}
+
+  #searchInput{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;}
+  #searchInput:focus{outline:none;border-color:var(--red);}
+  #searchInput::placeholder{color:var(--ink-dim);}
+  .yr-row{display:flex;align-items:center;gap:6px;}
+  .yr-input{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12px;padding:6px 6px;border-radius:4px;width:60px;flex-shrink:0;}
+  .yr-input:focus{outline:none;border-color:var(--red);}
+  .date-input{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:11px;padding:6px 6px;border-radius:4px;width:112px;flex-shrink:0;color-scheme:dark;}
+  :root[data-theme="light"] .date-input{color-scheme:light;}
+  .date-input:focus{outline:none;border-color:var(--red);}
+  #searchClear{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:12px;padding:7px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+  #searchClear:hover{border-color:var(--red);color:var(--ink);}
+
+  #mapControls{position:absolute;top:16px;right:16px;z-index:8;transition:right .2s ease;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end;max-width:calc(55% - 24px);}
+  main.panel-open #mapControls{right:calc(max(280px,min(400px,42vw)) + 16px);max-width:calc(45% - 24px);}
+  #mapControlsLeft{position:absolute;top:16px;left:16px;z-index:8;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;max-width:calc(45% - 24px);}
+
+  #zoomControls{position:absolute;bottom:16px;right:16px;z-index:8;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--overlay);transition:right .2s ease;}
+  main.panel-open #zoomControls{right:calc(max(280px,min(400px,42vw)) + 16px);}
+  #zoomControls button{border:none;background:transparent;color:var(--ink-dim);font-size:15px;line-height:1;width:32px;height:32px;cursor:pointer;}
+  #zoomControls button + button{border-top:1px solid var(--line);}
+  #zoomControls button:hover{color:var(--ink);background:rgba(193,39,45,0.12);}
+  #zoomControls button#zoomReset{font-size:12px;}
+
+  #top10Panel{background:var(--pop);width:280px;}
+  .t10-row{display:flex;align-items:center;gap:8px;margin:7px 0;cursor:pointer;}
+  .t10-row .name{font-size:11px;width:100px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .t10-row .bar-wrap{flex:1;background:var(--track);border-radius:2px;height:8px;overflow:hidden;}
+  .t10-row .bar{background:var(--red);height:100%;}
+  .t10-row .val{font-size:11px;color:var(--ink-dim);width:40px;text-align:right;flex-shrink:0;}
+  .t10-row:hover .name{color:var(--red);}
+
+  #pagefooter{padding:8px 28px;border-top:1px solid var(--line);font-size:9.5px;color:var(--ink-dim);flex-shrink:0;line-height:1.4;}
+
+  main{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0;position:relative;}
+  main > #map-wrap, main > #listView{flex:1;}
+  #map-wrap{flex:1;position:relative;overflow:hidden;min-height:0;}
+  svg#map{width:100%;height:100%;display:block;cursor:grab;}
+  svg#map:active{cursor:grabbing;}
+  .country{fill:var(--land);stroke:var(--land-stroke);stroke-width:0.6;vector-effect:non-scaling-stroke;}
+  .country.dimmed{opacity:0.35;}
+  circle.dot{fill-opacity:0.85;stroke:var(--dot-stroke);stroke-width:0.6;vector-effect:non-scaling-stroke;cursor:pointer;transition:fill-opacity .15s;}
+  circle.dot:hover{fill-opacity:1;filter:drop-shadow(0 0 6px var(--red-glow));}
+  circle.dot.selected{fill-opacity:1;stroke:var(--dot-selected);stroke-width:1.2;}
+
+  #tooltip{position:absolute;pointer-events:none;background:var(--pop);border:1px solid var(--red-dim);padding:8px 12px;font-size:12px;border-radius:3px;opacity:0;transition:opacity .1s;max-width:220px;line-height:1.5;z-index:5;box-shadow:0 4px 14px var(--shadow);}
+  #tooltip b{font-family:'PT Serif',Georgia,serif;font-size:13px;}
+  #tooltip .cnt{color:var(--red);}
+
+  #legend{background:var(--overlay);border:1px solid var(--line);padding:12px 16px;border-radius:4px;font-size:10px;color:var(--ink-dim);max-width:230px;}
+  #legend svg text{fill:var(--ink-dim);font-size:10px;}
+  #legend svg line{stroke:var(--ink-dim);stroke-width:0.6;}
+  #legend svg circle{fill:none;stroke:var(--red);stroke-width:1;}
+  #sourcesBanner{padding:8px 24px;border-top:1px solid var(--line);font-size:10.5px;color:var(--ink-dim);line-height:1.4;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;order:3;}
+  #sourcesBanner strong{color:var(--ink);}
+  #legend .row{display:flex;align-items:center;gap:8px;margin:5px 0;}
+  #legend svg{overflow:visible;display:block;}
+  #legend .title{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;color:var(--ink-dim);}
+
+  aside#panel{--panel-w:max(280px,min(400px,42vw));position:absolute;top:0;right:0;height:100%;z-index:9;width:0;overflow:hidden;border-left:1px solid var(--line);background:var(--bg2);transition:width .2s ease;display:flex;flex-direction:column;}
+  aside#panel.open{width:max(280px,min(400px,42vw));box-shadow:-18px 0 40px var(--shadow);}
+  #panel-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);flex-shrink:0;position:relative;}
+  #panel-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0 0 4px;}
+  #panel-head .meta{font-size:11px;color:var(--ink-dim);}
+  #panel-close{position:absolute;top:14px;right:14px;cursor:pointer;color:var(--ink-dim);font-size:20px;line-height:1;background:none;border:none;padding:4px 8px;}
+  #panel-close:hover{color:var(--ink);}
+  #panel-list{overflow-y:auto;flex:1;padding:8px 22px 30px;}
+  .inc{padding:14px 0;border-bottom:1px solid var(--line);}
+  .inc .date{font-size:11px;color:var(--red);letter-spacing:0.02em;}
+  .inc h3{font-family:'PT Serif',Georgia,serif;font-weight:400;font-size:15px;margin:3px 0 6px;line-height:1.3;}
+  .inc .row2{font-size:11.5px;color:var(--ink-dim);line-height:1.6;}
+  .inc .row2 span.k{color:var(--ink);}
+  .inc a{font-size:11px;}
+  #panel-empty{padding:40px 22px;color:var(--ink-dim);font-size:13px;line-height:1.6;}
+
+  #listView{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden;}
+  #listView.open{display:flex;}
+  #listView-head{padding:68px 32px 16px;border-bottom:1px solid var(--line);flex-shrink:0;}
+  #listView-head h2{font-family:'PT Serif',Georgia,serif;font-size:24px;margin:0 0 4px;}
+  #listView-head .meta{font-size:12px;color:var(--ink-dim);}
+  #listView-body{flex:1;overflow-y:auto;padding:0 32px 30px;}
+  table#listTable{width:100%;border-collapse:collapse;}
+  table#listTable thead th{position:sticky;top:0;background:var(--bg);text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-dim);padding:12px 10px;border-bottom:1px solid var(--line);}
+  table#listTable tbody tr{cursor:pointer;border-bottom:1px solid var(--line);}
+  table#listTable tbody tr:hover{background:rgba(193,39,45,0.08);}
+  table#listTable tbody td{padding:11px 10px;font-size:12.5px;vertical-align:top;}
+  table#listTable tbody td.ev{font-family:'PT Serif',Georgia,serif;font-size:13.5px;max-width:280px;}
+  table#listTable tbody td.num{color:var(--red);text-align:right;}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  #aboutOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:21;align-items:center;justify-content:center;}
+  #aboutOverlay.open{display:flex;}
+  #aboutModal{width:640px;max-width:calc(100vw - 32px);max-height:min(88vh,900px);overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
+  #aboutModal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line);}
+  #aboutModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0;}
+  #aboutModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:20px 24px 26px;font-size:12.5px;line-height:1.65;color:var(--ink-dim);}
+  #aboutModal-body h3{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--red);margin:22px 0 8px;font-weight:600;}
+  #aboutModal-body h3:first-child{margin-top:0;}
+  #aboutModal-body p{margin:0 0 10px;}
+  #aboutModal-body a{color:var(--ink);text-decoration:underline;text-underline-offset:2px;}
+  #aboutModal-body a:hover{color:var(--red);}
+  #aboutModal-body ul{margin:0 0 10px;padding-left:18px;}
+  #aboutModal-body li{margin-bottom:5px;}
+  .credit-row{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .credit-row:last-child{border-bottom:none;}
+  .credit-name{color:var(--ink);font-size:13px;}
+  .credit-role{font-size:11px;color:var(--ink-dim);}
+  .dl-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 4px;}
+  .dl-btn{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:7px 13px;border-radius:100px;cursor:pointer;white-space:nowrap;}
+  .dl-btn:hover{border-color:var(--red);color:var(--ink);}
+  .dl-note{font-size:11px;color:var(--ink-dim);}
+  .cite-box{background:var(--field);border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;padding:12px 14px;font-size:11.5px;line-height:1.6;color:var(--ink);margin:0 0 10px;}
+  .todo{color:var(--red);}
+  #addOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:20;align-items:center;justify-content:center;}
+  #addOverlay.open{display:flex;}
+  #addModal{width:480px;max-width:calc(100vw - 32px);max-height:min(88vh,860px);overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
+  #addModal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);}
+  #addModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:19px;margin:0;}
+  #addModal-head button,#aboutModal-head button{background:none;border:none;color:var(--ink-dim);font-size:18px;cursor:pointer;}
+  #addModal-head button:hover,#aboutModal-head button:hover{color:var(--ink);}
+  #addModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px;}
+  .review-note{font-size:11.5px;line-height:1.55;color:var(--ink-dim);margin:0 0 4px;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:rgba(193,39,45,0.05);}
+  #addModal-body textarea{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;resize:vertical;}
+  #addModal-body textarea:focus{outline:none;border-color:var(--red);}
+  #addError a{color:var(--red);text-decoration:underline;}
+  .field{display:flex;flex-direction:column;gap:6px;flex:1;}
+  .field label{font-size:10.5px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);}
+  .field input,.field select{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:13px;padding:8px 10px;border-radius:4px;font-family:inherit;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--red);}
+  .field input[type="file"]{padding:7px;font-size:12px;color:var(--ink-dim);}
+  .file-name{font-size:11.5px;color:var(--red);}
+  .field-row{display:flex;gap:14px;}
+  .sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);font-size:9.5px;color:var(--ink-dim);line-height:1.4;}
+  #addError{color:var(--err);font-size:12px;min-height:16px;}
+  #addModal-foot{flex:0 0 auto;background:var(--bg2);display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line);}
+  #addModal-foot button{font-size:12.5px;padding:9px 16px;border-radius:6px;cursor:pointer;letter-spacing:0.02em;}
+  #addCancel{background:transparent;border:1px solid var(--line);color:var(--ink-dim);}
+  #addCancel:hover{color:var(--ink);border-color:var(--ink-dim);}
+  #addSubmit{background:var(--red);border:1px solid var(--red);color:#fff;font-weight:600;}
+  #addSubmit:hover{background:#a51f24;}
+
+  .inc{cursor:pointer;}
+  .inc:hover h3{color:var(--red);}
+
+  #detailOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:25;align-items:center;justify-content:center;}
+  #detailOverlay.open{display:flex;}
+  #detailModal{width:560px;max-height:88vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
+  #detailModal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:22px 26px 16px;border-bottom:1px solid var(--line);}
+  #detailModal-head .date{font-size:12px;color:var(--red);letter-spacing:0.02em;margin-bottom:6px;}
+  #detailModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:23px;margin:0;line-height:1.3;}
+  #detailClose{background:none;border:none;color:var(--ink-dim);font-size:19px;cursor:pointer;flex-shrink:0;}
+  #detailClose:hover{color:var(--ink);}
+  #detailModal-body{padding:20px 26px 26px;display:flex;flex-direction:column;gap:16px;}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;}
+  .detail-item .k{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);margin-bottom:4px;}
+  .detail-item .v{font-size:14px;line-height:1.4;}
+  .detail-full{border-top:1px solid var(--line);padding-top:16px;}
+  .detail-full a{font-size:13px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar">
+    <div class="brand">
+      <span class="kicker">A global database, 1982–2026</span>
+      <h1>Plorabunt</h1>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statIncidents">–</div><div class="l">Incidents</div></div>
+      <div class="stat"><div class="n" id="statCountries">–</div><div class="l">Countries</div></div>
+      <div class="stat"><div class="n" style="font-size:15px;">1982–2026</div><div class="l">Span</div></div>
+    </div>
+    <div id="showingLine">Showing all incidents</div>
+
+    <div class="panel-section">
+      <div class="section-title">Search</div>
+      <div class="ctrl-block">
+        <input type="text" id="searchInput" placeholder="Event, city, group, motive…">
+      </div>
+      <button id="searchClear">Clear search</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Date range</div>
+      <div class="yr-row"><input type="date" id="dateFrom" class="date-input" min="1982-01-01" max="2026-12-31" value="1982-01-01"><span class="ctrl-label">to</span><input type="date" id="dateTo" class="date-input" min="1982-01-01" max="2026-12-31" value="2026-12-31"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Rankings</div>
+      <div class="dropdown" id="top10Dropdown">
+        <button type="button" id="top10Btn">Top 10 countries ▾</button>
+        <div class="dropdown-panel" id="top10Panel"><div id="top10List"></div></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Victims' religion</div>
+      <div class="dropdown" id="relDropdown">
+        <button type="button" id="relDropdownBtn">All religions ▾</button>
+        <div class="dropdown-panel" id="relDropdownPanel"></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Mode of attack</div>
+      <div class="dropdown" id="modeDropdown">
+        <button type="button" id="modeDropdownBtn">All modes ▾</button>
+        <div class="dropdown-panel" id="modeDropdownPanel"></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div id="legend"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      Figures marked "Unknown" or "(Uncertain)" reflect gaps or disputes in original source reporting; entries are grouped here by country of occurrence.
+    </div>
+  </nav>
+
+  <main>
+    <div id="sourcesBanner"><strong>A note on sources:</strong> not every incident shows a visible source link — most were collected internally from outlets we can't redistribute publicly, but every entry, including those without a visible link, was documented from material we hold internally.</div>
+    <div id="mapControlsLeft">
+      <div class="segmented" id="sidebarViewToggle">
+        <button data-view="map" class="active">Map</button>
+        <button data-view="list">List</button>
+      </div>
+      <div class="segmented" id="metricToggle">
+        <button data-metric="incidents" class="active">Incidents</button>
+        <button data-metric="victims">Victims killed</button>
+      </div>
+      <button id="resetBtn" style="width:auto;">Reset filters</button>
+    </div>
+    <div id="mapControls">
+      <button id="addCaseBtn" class="primary-btn" style="width:auto;">+ Submit a case</button>
+      <button id="aboutBtn" style="width:auto;">About</button>
+      <button id="themeBtn" style="width:auto;" title="Switch between light and dark">Light</button>
+      <button id="curatorBtn" style="width:auto;display:none;">Curator</button>
+    </div>
+    <div id="map-wrap">
+      <svg id="map"></svg>
+      <div id="tooltip"></div>
+      <div id="zoomControls">
+        <button id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+        <button id="zoomReset" title="Show the whole world" aria-label="Reset zoom">⟲</button>
+      </div>
+    </div>
+    <div id="listView">
+      <div id="listView-head">
+        <h2>All cases</h2>
+        <div class="meta" id="listView-meta"></div>
+      </div>
+      <div id="listView-body"></div>
+    </div>
+    <aside id="panel">
+      <div id="panel-head">
+        <button id="panel-close">✕</button>
+        <h2 id="panel-country">—</h2>
+        <div class="meta" id="panel-meta"></div>
+      </div>
+      <div id="panel-list"></div>
+    </aside>
+  </main>
+</div>
+
+<div id="curatorOverlay">
+  <div id="curatorModal">
+    <div id="curatorModal-head">
+      <h2>Curator: publish an update</h2>
+      <button id="curatorClose">✕</button>
+    </div>
+    <div id="curatorModal-body">
+
+      <div id="curSignin">
+        <p class="cur-note"><strong>Restricted.</strong> Publishing requires a GitHub token with
+        write access to this repository. Create a fine-grained personal access token limited to
+        <code>plorabunt-map</code> with permission <em>Contents: read and write</em>, then paste it
+        below. It is stored in this browser only, and it is a key: anyone holding it can write to the
+        repository, so use it only on machines you control.</p>
+        <input type="password" id="curTokenInput" placeholder="github_pat_…" autocomplete="off">
+        <div class="cur-row"><button id="curSignInBtn" class="primary-btn" style="width:auto;">Sign in</button></div>
+      </div>
+
+      <div id="curWork" style="display:none;">
+        <p class="cur-line">Upload the updated workbook, in <code>.xlsx</code> or <code>.csv</code>.
+        Nothing is written until you have seen what would change and confirmed it.</p>
+        <input type="file" id="curFile" accept=".xlsx,.xls,.csv,.txt">
+        <div id="curReport"></div>
+        <div class="cur-row">
+          <button id="curPublish" class="primary-btn" style="width:auto;display:none;">Publish to the live map</button>
+        </div>
+        <div class="cur-row">
+          <label style="font-size:11.5px;display:flex;gap:6px;align-items:center;cursor:pointer;">
+            <input type="checkbox" id="curAlsoSource" checked style="width:auto;"> also commit the uploaded file to <code>data/</code>
+          </label>
+        </div>
+      </div>
+
+      <div id="curStatus"></div>
+
+      <div class="cur-row" style="margin-top:18px;">
+        <button id="curSignOut" style="width:auto;display:none;border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:7px 12px;border-radius:100px;cursor:pointer;">Remove token from this browser</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="aboutOverlay">
+  <div id="aboutModal">
+    <div id="aboutModal-head">
+      <h2>About this database</h2>
+      <button id="aboutClose">✕</button>
+    </div>
+    <div id="aboutModal-body">
+
+      <h3>What this is</h3>
+      <p>Plorabunt is a curated record of attacks on places of worship, on worshippers, and on
+      religious personnel worldwide. Each entry documents a single incident and is tied to the
+      source material from which it was reconstructed.</p>
+
+      <h3>How to read the map</h3>
+      <p>Points are aggregated by country, not by exact location. The size of a point reflects the
+      number of <em>recorded incidents</em> in that country, or the number of victims killed when
+      that metric is selected; colour deepens with the number of victims killed. A large point
+      therefore means "many entries in this record", which is not the same as "the most violence".</p>
+
+      <h3>Coverage and limits</h3>
+      <p>The density of this record reflects the availability and the language of reporting as much
+      as it reflects events. Countries covered intensively by English-language and international
+      media are documented more thoroughly here than countries where reporting is sparse,
+      restricted, or published in languages not systematically surveyed. Absence of points is
+      evidence about the record, not about the world.</p>
+      <p>Casualty figures are given as reported. Where sources disagree, the range is preserved
+      rather than resolved, and entries marked "Unknown" or "(Uncertain)" record a genuine gap or
+      dispute in the underlying reporting. Attribution to a group is given only where a source
+      states it; it is not inferred.</p>
+      <h3>Inclusion criteria</h3>
+      <p>An event enters this record when the victims were attacked <em>inside the place of worship
+      in question</em>, or while <em>performing a religious act in the course of a religious
+      ceremony</em>. The test is therefore the situation of the victims at the moment of the attack.
+      An attack that meets one of these two conditions is recorded whether or not the motive
+      attributed to the perpetrators is religious, disputed, or unknown.</p>
+      <p class="todo">⚠️ Still to be stated by the editors: the geographical and chronological scope
+      deliberately surveyed, the categories of event deliberately excluded, and the procedure by
+      which an entry is verified before publication.</p>
+
+      <h3>Credits</h3>
+      <div class="credit-row">
+        <div>
+          <div class="credit-name">Amina El Ganadi</div>
+          <div class="credit-role"><a href="https://orcid.org/0000-0002-8196-2628" target="_blank" rel="noopener">orcid.org/0000-0002-8196-2628</a></div>
+        </div>
+      </div>
+      <div class="credit-row">
+        <div>
+          <div class="credit-name">Federico Ruozzi</div>
+          <div class="credit-role"><a href="https://orcid.org/0000-0003-2729-5016" target="_blank" rel="noopener">orcid.org/0000-0003-2729-5016</a></div>
+        </div>
+      </div>
+
+      <h3>Data and code</h3>
+      <p>Download the published record as a spreadsheet. The file is generated from what the map
+      currently holds, so it is always in step with what you see.</p>
+      <div class="dl-row">
+        <button id="dlCsv" class="dl-btn">Download CSV</button>
+        <button id="dlXlsx" class="dl-btn">Download Excel</button>
+        <span id="dlNote" class="dl-note"></span>
+      </div>
+      <p style="margin-top:12px;">The dataset and the code that renders it are available at
+      <a href="https://github.com/Amin-al-Maktaba-Project/plorabunt-map" target="_blank" rel="noopener">github.com/Amin-al-Maktaba-Project/plorabunt-map</a>,
+      where the full revision history of every record can be consulted.</p>
+      <p>The dataset is released under
+      <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">Creative
+      Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)</a>: it may be reused,
+      redistributed and adapted for research, teaching and other non-commercial purposes, provided
+      the authors are credited. Commercial use requires prior permission. The software that renders
+      the map is released under the MIT licence.</p>
+
+      <h3>Suggested citation</h3>
+      <div class="cite-box">
+        El Ganadi, Amina, and Federico Ruozzi. <em>Plorabunt: Attacks on Places of Worship,
+        A Global Record</em>. Version <span id="aboutVersion">–</span>, <span id="aboutUpdated">–</span>.
+        https://amin-al-maktaba-project.github.io/plorabunt-map/
+      </div>
+
+      <h3>Corrections</h3>
+      <p>Corrections and additions are welcome. Use the <strong>Submit a case</strong> button, which
+      opens a pre-filled report; every submission is reviewed against its source before it enters
+      the published record, and the review remains publicly visible.</p>
+
+    </div>
+  </div>
+</div>
+
+<div id="addOverlay">
+  <div id="addModal">
+    <div id="addModal-head">
+      <h2>Submit a case for review</h2>
+      <button id="addClose">✕</button>
+    </div>
+    <div id="addModal-body">
+      <p class="review-note">Submissions are reviewed by the project curators before being added to
+      the published dataset. This form opens a pre-filled report on GitHub, where you can also attach
+      supporting files (PDF, images, screenshots) by dragging them into the report. A free GitHub
+      account is required.</p>
+      <div class="field"><label>Date</label><input type="date" id="f-date" min="1982-01-01" max="2026-12-31"></div>
+      <div class="field"><label>Event / headline</label><input type="text" id="f-ev" placeholder="Short description of the incident"></div>
+      <div class="field-row">
+        <div class="field"><label>City</label><input type="text" id="f-city" placeholder="City"></div>
+        <div class="field"><label>Country</label><input type="text" id="f-country" list="countryList" placeholder="Country"><datalist id="countryList"></datalist></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Victims' religion</label>
+          <select id="f-rel">
+            <option value="Islam">Islam</option>
+            <option value="Christianity">Christianity</option>
+            <option value="Hinduism">Hinduism</option>
+            <option value="Buddhism">Buddhism</option>
+            <option value="Sikhism">Sikhism</option>
+            <option value="Judaism">Judaism</option>
+            <option value="Other/Unknown" selected>Other/Unknown</option>
+          </select>
+        </div>
+        <div class="field"><label>Mode of attack</label>
+          <select id="f-mode">
+            <option value="Bombing/Explosion">Bombing/Explosion</option>
+            <option value="Armed Assault">Armed Assault</option>
+            <option value="Assassination">Assassination</option>
+            <option value="Hostage Taking">Hostage Taking</option>
+            <option value="Other" selected>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Victims killed</label><input type="number" id="f-vic" min="0" placeholder="0"></div>
+        <div class="field"><label>Injured</label><input type="text" id="f-inj" placeholder="Number or Unknown"></div>
+      </div>
+      <div class="field"><label>Group / attribution (optional)</label><input type="text" id="f-grp" placeholder="Perpetrator group, if known"></div>
+      <div class="field"><label>Source URL (required)</label><input type="text" id="f-src" placeholder="https://…"></div>
+      <div class="field">
+        <label>Notes for the curators (optional)</label>
+        <textarea id="f-notes" rows="3" placeholder="Anything else we should know: conflicting casualty figures, additional sources, uncertainty about the attribution…"></textarea>
+      </div>
+      <div id="addError"></div>
+    </div>
+    <div id="addModal-foot">
+      <button id="addCancel">Cancel</button>
+      <button id="addSubmit">Continue on GitHub →</button>
+    </div>
+  </div>
+</div>
+
+<div id="detailOverlay">
+  <div id="detailModal">
+    <div id="detailModal-head">
+      <div>
+        <div class="date" id="detail-date"></div>
+        <h2 id="detail-title"></h2>
+      </div>
+      <button id="detailClose">✕</button>
+    </div>
+    <div id="detailModal-body">
+      <div class="detail-grid">
+        <div class="detail-item"><div class="k">Country</div><div class="v" id="detail-country"></div></div>
+        <div class="detail-item"><div class="k">City</div><div class="v" id="detail-city"></div></div>
+        <div class="detail-item"><div class="k">Victims' religion</div><div class="v" id="detail-rel"></div></div>
+        <div class="detail-item"><div class="k">Place of worship</div><div class="v" id="detail-worship"></div></div>
+        <div class="detail-item"><div class="k">Mode of attack</div><div class="v" id="detail-mode"></div></div>
+        <div class="detail-item"><div class="k">Attribution / group</div><div class="v" id="detail-grp"></div></div>
+        <div class="detail-item"><div class="k">Victims killed</div><div class="v" id="detail-vic"></div></div>
+        <div class="detail-item"><div class="k">Injured</div><div class="v" id="detail-inj"></div></div>
+      </div>
+      <div class="detail-full" id="detail-links"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+   CONFIG — the repository that receives submitted cases.
+------------------------------------------------------------------ */
+const GITHUB_REPO = 'Amin-al-Maktaba-Project/plorabunt-map';
+
+/* Numbers are always written the British way (1,661), whatever the
+   language of the visitor's browser. */
+const fmtN = n => Number(n).toLocaleString('en-GB');
+
+/* ---------------- Light and dark themes ---------------- */
+const THEME_KEY = 'plorabunt_theme';
+function currentTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+function updateThemeButton() {
+  document.getElementById('themeBtn').textContent = currentTheme() === 'light' ? '☾ Dark' : '☀ Light';
+}
+/* Dot colours for each theme: light end for few victims, dark end for many. */
+function dotColourRange() {
+  return currentTheme() === 'light' ? ['#e8a0a3', '#6e0f14'] : ['#c4585c', '#3d0a0d'];
+}
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const next = currentTheme() === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  updateThemeButton();
+  render();
+});
+updateThemeButton();
+
+const RELIGIONS = Array.from(new Set(window.PLORABUNT_DATA.map(d => (d.relRaw||'Unknown').trim()))).sort((a,b)=>{
+  const ca = window.PLORABUNT_DATA.filter(d=>(d.relRaw||'Unknown').trim()===a).length;
+  const cb = window.PLORABUNT_DATA.filter(d=>(d.relRaw||'Unknown').trim()===b).length;
+  return cb-ca;
+});
+const MODES = ['Bombing/Explosion','Armed Assault','Assassination','Hostage Taking','Other'];
+let activeReligions = new Set(RELIGIONS);
+let activeModes = new Set(MODES);
+let yearFrom = 1982, yearTo = 2026;
+let dateFrom = '19820101', dateTo = '20261231';
+let selectedCountry = null;
+let metric = 'incidents';
+let searchQuery = '';
+let viewMode = 'map';
+
+document.querySelectorAll('#sidebarViewToggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    viewMode = b.dataset.view;
+    document.querySelectorAll('#sidebarViewToggle button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('map-wrap').style.display = viewMode === 'map' ? '' : 'none';
+    document.getElementById('panel').classList.toggle('open', viewMode === 'map' && (selectedCountry || isSearchActive()));
+    document.getElementById('listView').classList.toggle('open', viewMode === 'list');
+    render();
+  });
+});
+
+const relBtn = document.getElementById('relDropdownBtn');
+const relPanel = document.getElementById('relDropdownPanel');
+function religionCount(r) { return window.PLORABUNT_DATA.filter(d => (d.relRaw||'Unknown').trim() === r).length; }
+function updateRelBtnLabel() {
+  relBtn.textContent = (activeReligions.size === RELIGIONS.length ? 'All religions' : activeReligions.size === 0 ? 'None selected' : `${activeReligions.size} selected`) + ' ▾';
+}
+relPanel.innerHTML = `<div class="dropdown-action" id="relAll">Select all</div><div class="dropdown-action" id="relNone">Clear all</div><div class="dropdown-sep"></div>` +
+  RELIGIONS.map(r => `<label class="dropdown-row"><input type="checkbox" checked data-rel="${r}"><span>${r}</span><span class="cnt">${fmtN(religionCount(r))}</span></label>`).join('');
+relPanel.querySelectorAll('input[data-rel]').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const r = cb.dataset.rel;
+    if (cb.checked) activeReligions.add(r); else activeReligions.delete(r);
+    updateRelBtnLabel();
+    render();
+  });
+});
+document.getElementById('relAll').addEventListener('click', () => {
+  activeReligions = new Set(RELIGIONS);
+  relPanel.querySelectorAll('input[data-rel]').forEach(cb=>cb.checked=true);
+  updateRelBtnLabel(); render();
+});
+document.getElementById('relNone').addEventListener('click', () => {
+  activeReligions = new Set();
+  relPanel.querySelectorAll('input[data-rel]').forEach(cb=>cb.checked=false);
+  updateRelBtnLabel(); render();
+});
+relBtn.addEventListener('click', e => { e.stopPropagation(); relPanel.classList.toggle('open'); });
+document.addEventListener('click', () => relPanel.classList.remove('open'));
+relPanel.addEventListener('click', e => e.stopPropagation());
+
+const modeBtn = document.getElementById('modeDropdownBtn');
+const modePanel = document.getElementById('modeDropdownPanel');
+function modeCount(m) { return window.PLORABUNT_DATA.filter(d => d.modeB === m).length; }
+function updateModeBtnLabel() {
+  modeBtn.textContent = (activeModes.size === MODES.length ? 'All modes' : activeModes.size === 0 ? 'None selected' : `${activeModes.size} selected`) + ' ▾';
+}
+modePanel.innerHTML = `<div class="dropdown-action" id="modeAll">Select all</div><div class="dropdown-action" id="modeNone">Clear all</div><div class="dropdown-sep"></div>` +
+  MODES.map(m => `<label class="dropdown-row"><input type="checkbox" checked data-mode="${m}"><span>${m}</span><span class="cnt">${fmtN(modeCount(m))}</span></label>`).join('');
+modePanel.querySelectorAll('input[data-mode]').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const m = cb.dataset.mode;
+    if (cb.checked) activeModes.add(m); else activeModes.delete(m);
+    updateModeBtnLabel();
+    render();
+  });
+});
+document.getElementById('modeAll').addEventListener('click', () => {
+  activeModes = new Set(MODES);
+  modePanel.querySelectorAll('input[data-mode]').forEach(cb=>cb.checked=true);
+  updateModeBtnLabel(); render();
+});
+document.getElementById('modeNone').addEventListener('click', () => {
+  activeModes = new Set();
+  modePanel.querySelectorAll('input[data-mode]').forEach(cb=>cb.checked=false);
+  updateModeBtnLabel(); render();
+});
+modeBtn.addEventListener('click', e => { e.stopPropagation(); modePanel.classList.toggle('open'); });
+document.addEventListener('click', () => modePanel.classList.remove('open'));
+modePanel.addEventListener('click', e => e.stopPropagation());
+
+function applyDateRange() {
+  const fromEl = document.getElementById('dateFrom');
+  const toEl   = document.getElementById('dateTo');
+  let f = (fromEl.value || '').replaceAll('-','');
+  let t = (toEl.value   || '').replaceAll('-','');
+
+  // An input/date field reports an empty value while a segment is still being
+  // typed, so ignore anything that is not a complete date.
+  if (f.length !== 8) f = '19820101';
+  if (t.length !== 8) t = '20261231';
+
+  // A reversed range would silently show nothing at all; swap instead.
+  if (f > t) { [f, t] = [t, f]; }
+
+  dateFrom = f;
+  dateTo   = t;
+  yearFrom = +dateFrom.slice(0,4);
+  yearTo   = +dateTo.slice(0,4);
+  render();
+}
+
+['dateFrom','dateTo'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('change', applyDateRange);
+  el.addEventListener('input', applyDateRange);
+  el.addEventListener('blur', applyDateRange);
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); applyDateRange(); el.blur(); }
+  });
+});
+
+document.querySelectorAll('#metricToggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    metric = b.dataset.metric;
+    document.querySelectorAll('#metricToggle button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    render();
+  });
+});
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  render();
+});
+document.getElementById('searchClear').addEventListener('click', () => {
+  searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  selectedCountry = null;
+  document.getElementById('panel').classList.remove('open');
+  render();
+});
+
+document.getElementById('top10Btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('top10Panel');
+  panel.classList.toggle('open');
+  document.getElementById('top10Btn').classList.toggle('active');
+});
+document.addEventListener('click', () => document.getElementById('top10Panel').classList.remove('open'));
+document.getElementById('top10Panel').addEventListener('click', e => e.stopPropagation());
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  activeReligions = new Set(RELIGIONS);
+  activeModes = new Set(MODES);
+  yearFrom = 1982; yearTo = 2026;
+  dateFrom = '19820101'; dateTo = '20261231';
+  metric = 'incidents';
+  searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('dateFrom').value = '1982-01-01';
+  document.getElementById('dateTo').value = '2026-12-31';
+  relPanel.querySelectorAll('input[data-rel]').forEach(cb=>cb.checked=true);
+  updateRelBtnLabel();
+  modePanel.querySelectorAll('input[data-mode]').forEach(cb=>cb.checked=true);
+  updateModeBtnLabel();
+  document.querySelectorAll('#metricToggle button').forEach(x=>x.classList.toggle('active', x.dataset.metric==='incidents'));
+  selectedCountry = null;
+  document.getElementById('panel').classList.remove('open');
+  resetZoom();
+  render();
+});
+
+document.getElementById('panel-close').addEventListener('click', () => {
+  selectedCountry = null;
+  searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('panel').classList.remove('open');
+  document.querySelectorAll('circle.dot.selected').forEach(c=>c.classList.remove('selected'));
+});
+
+const MANUAL_CENTROID = {
+  'United States of America': [-98.5, 39.5],
+  'France': [2.35, 46.6],
+  'United Kingdom': [-2.9, 54.2],
+  'Chile': [-71.5, -32.5],
+  'New Zealand': [172.8, -41.5],
+  'Russia': [55, 61]
+};
+const MANUAL_POINT = { 'Saint Lucia': [-60.98, 13.9] };
+
+function filteredData() {
+  return window.PLORABUNT_DATA.filter(d => {
+    const dd = (d.d||'').replace(/\D/g,'').padEnd(8,'0');
+    return dd >= dateFrom && dd <= dateTo && activeReligions.has((d.relRaw||'Unknown').trim()) && activeModes.has(d.modeB);
+  });
+}
+
+function isSearchActive() {
+  return searchQuery.trim().length > 0;
+}
+function matchesQuery(d) {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return true;
+  return [d.ev, d.city, d.country, d.mode, d.relRaw, d.grp].join(' ').toLowerCase().includes(q);
+}
+function searchResults() {
+  return filteredData().filter(matchesQuery);
+}
+
+function fmtDate(d) {
+  const s = (d||'').replace(/\D/g,'');
+  if (s.length !== 8) return d || 'Date unknown';
+  const y = s.slice(0,4), m = +s.slice(4,6), day = +s.slice(6,8);
+  const months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if (m < 1 || m > 12) return d;
+  return `${day} ${months[m]} ${y}`;
+}
+
+function renderListView(baseData) {
+  if (viewMode !== 'list') return;
+  const rows = (isSearchActive() ? searchResults() : baseData).slice().sort((a,b)=>b.y-a.y);
+  document.getElementById('listView-meta').textContent = `${fmtN(rows.length)} incident${rows.length===1?'':'s'}${isSearchActive() ? ` matching \u201c${searchQuery.trim()}\u201d` : ''}`;
+  const idxOffset = window.__incidentRegistry.length;
+  rows.forEach(it => window.__incidentRegistry.push(it));
+  const body = document.getElementById('listView-body');
+  if (!rows.length) {
+    body.innerHTML = '<div id="panel-empty">No incidents match the current filters.</div>';
+    return;
+  }
+  body.innerHTML = `<table id="listTable"><thead><tr>
+      <th>Date</th><th>Country</th><th>City</th><th>Event</th><th>Religion</th><th>Mode</th><th class="num">Killed</th>
+    </tr></thead><tbody>
+    ${rows.map((it,i) => `<tr data-inc-idx="${idxOffset+i}">
+      <td>${fmtDate(it.d)}</td><td>${it.country||'\u2014'}</td><td>${it.city||'\u2014'}</td>
+      <td class="ev">${it.ev||'Untitled incident'}</td><td>${it.relRaw||'Unknown'}</td><td>${it.mode||'Unknown'}</td>
+      <td class="num">${it.vic||'\u2014'}</td>
+    </tr>`).join('')}
+    </tbody></table>`;
+  body.querySelectorAll('tr[data-inc-idx]').forEach(tr => {
+    tr.addEventListener('click', () => openDetail(window.__incidentRegistry[+tr.dataset.incIdx]));
+  });
+}
+
+let svg, gZoom, gCountries, gDots, projection, path, radiusScale, zoomBehavior;
+let zoomK = 1;
+const width0 = 1200, height0 = 560;
+
+/* ---------------- Zoom and pan ----------------
+   Dots keep the same size on screen while the map is enlarged, so that
+   zooming separates crowded regions instead of simply magnifying the pile. */
+function applyZoom(ev) {
+  zoomK = ev.transform.k;
+  gZoom.attr('transform', ev.transform);
+  gDots.selectAll('circle.dot').attr('r', d => d.r / zoomK);
+}
+function zoomBy(factor) {
+  if (!svg) return;
+  svg.transition().duration(250).call(zoomBehavior.scaleBy, factor);
+}
+function resetZoom() {
+  if (!svg) return;
+  svg.transition().duration(300).call(zoomBehavior.transform, d3.zoomIdentity);
+}
+document.getElementById('zoomIn').addEventListener('click', () => zoomBy(1.6));
+document.getElementById('zoomOut').addEventListener('click', () => zoomBy(1 / 1.6));
+document.getElementById('zoomReset').addEventListener('click', resetZoom);
+
+d3.json('vendor/countries-110m.json')
+  .catch(() => {
+    console.warn('vendor/countries-110m.json not found, falling back to the CDN');
+    return d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json');
+  })
+  .then(topology => {
+  const countries = topojson.feature(topology, topology.objects.countries);
+  // Antarctica holds no records and takes a fifth of the height; leave it out.
+  countries.features = countries.features.filter(f => f.properties.name !== 'Antarctica' && f.id !== '010');
+
+  svg = d3.select('#map').attr('viewBox', `0 0 ${width0} ${height0}`);
+  projection = d3.geoNaturalEarth1().fitSize([width0 - 20, height0 - 20], countries);
+  projection.translate([projection.translate()[0] + 10, projection.translate()[1] + 10]);
+  path = d3.geoPath(projection);
+
+  gZoom = svg.append('g');
+  gCountries = gZoom.append('g');
+  gCountries.selectAll('path').data(countries.features).enter().append('path')
+    .attr('class','country').attr('d', path);
+
+  const centroidByName = {};
+  countries.features.forEach(f => {
+    centroidByName[f.properties.name] = MANUAL_CENTROID[f.properties.name] || d3.geoCentroid(f);
+  });
+  window.__centroidByName = centroidByName;
+
+  const countryList = document.getElementById('countryList');
+  const knownCountries = Array.from(new Set(window.PLORABUNT_DATA.map(d=>d.country))).sort();
+  countryList.innerHTML = knownCountries.map(c=>`<option value="${c}"></option>`).join('');
+
+  gDots = gZoom.append('g');
+
+  zoomBehavior = d3.zoom()
+    .scaleExtent([1, 10])
+    .translateExtent([[0, 0], [width0, height0]])
+    .on('zoom', applyZoom);
+  svg.call(zoomBehavior).on('dblclick.zoom', null);
+
+  render();
+});
+
+function render() {
+  if (!projection) return;
+  const data = filteredData();
+  document.getElementById('statIncidents').textContent = fmtN(data.length);
+  const countriesSet = new Set(data.map(d=>d.cc));
+  document.getElementById('statCountries').textContent = fmtN(countriesSet.size);
+  const total = window.PLORABUNT_DATA.length;
+  document.getElementById('showingLine').innerHTML = data.length === total
+    ? `Showing all <strong>${fmtN(total)}</strong> incidents`
+    : `Showing <strong>${fmtN(data.length)}</strong> of ${fmtN(total)} incidents`;
+
+  const byCountry = d3.rollup(data, v => v, d => d.cc);
+  const valueOf = items => metric === 'victims' ? d3.sum(items, i=>i.vicN) : items.length;
+  const counts = Array.from(byCountry.values()).map(valueOf);
+  const maxCount = d3.max(counts) || 1;
+  radiusScale = d3.scaleSqrt().domain([0, maxCount]).range([0, 34]);
+
+  const centroidByName = window.__centroidByName;
+  const dotData = Array.from(byCountry.entries()).map(([name, items]) => {
+    const c = MANUAL_POINT[name] || centroidByName[name];
+    if (!c) return null;
+    const p = projection(c);
+    if (!p) return null;
+    const count = valueOf(items);
+    return { name, items, count, vic: d3.sum(items, i=>i.vicN), x: p[0], y: p[1],
+             r: Math.max(radiusScale(count), count > 0 ? 2.5 : 0) };
+  }).filter(Boolean).sort((a,b)=>b.count-a.count);
+
+  const maxVic = d3.max(dotData, d=>d.vic) || 1;
+  const colorScale = d3.scaleSqrt().domain([0, maxVic]).range(dotColourRange()).clamp(true);
+  // When size already shows victims killed, colour would only repeat it,
+  // so the dots take a single shade and the size carries the reading.
+  const fillFor = d => metric === 'victims'
+    ? getComputedStyle(document.documentElement).getPropertyValue('--red').trim()
+    : (d.vic > 0 ? colorScale(d.vic) : '#8a8580');
+
+  const sel = gDots.selectAll('circle.dot').data(dotData, d=>d.name);
+  sel.exit().remove();
+  const merged = sel.enter().append('circle').attr('class','dot').merge(sel);
+  merged
+    .attr('cx', d=>d.x).attr('cy', d=>d.y)
+    .attr('r', d=>d.r / zoomK)
+    .attr('fill', fillFor)
+    .classed('selected', d=>d.name===selectedCountry)
+    .on('mousemove', (ev,d) => showTooltip(ev,d))
+    .on('mouseleave', hideTooltip)
+    .on('click', (ev,d) => openPanel(d));
+  merged.order();
+
+  drawLegend(maxCount);
+  drawTop10(dotData);
+  renderListView(data);
+  if (viewMode === 'map' && isSearchActive()) {
+    renderSearchPanel();
+  } else if (viewMode === 'map' && selectedCountry) {
+    const d = dotData.find(x=>x.name===selectedCountry);
+    if (d) fillPanel(d); else { document.getElementById('panel').classList.remove('open'); selectedCountry=null; }
+  } else {
+    document.getElementById('panel').classList.remove('open');
+  }
+}
+
+function drawTop10(dotData) {
+  const list = document.getElementById('top10List');
+  const top = dotData.slice(0, 10);
+  const max = top.length ? top[0].count : 1;
+  list.innerHTML = top.map(d => `
+    <div class="t10-row" data-name="${d.name}">
+      <div class="name">${d.name}</div>
+      <div class="bar-wrap"><div class="bar" style="width:${(d.count/max*100).toFixed(0)}%"></div></div>
+      <div class="val">${fmtN(d.count)}</div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.t10-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const d = dotData.find(x=>x.name===row.dataset.name);
+      if (d) openPanel(d);
+    });
+  });
+}
+
+function showTooltip(ev, d) {
+  const tt = document.getElementById('tooltip');
+  const rect = document.getElementById('map-wrap').getBoundingClientRect();
+  tt.innerHTML = `<b>${d.name}</b><br><span class="cnt">${fmtN(d.count)}</span> ${metric==='victims' ? 'victims killed (approx.)' : 'incident'+(d.count===1?'':'s')+' recorded'}`;
+  tt.style.left = (ev.clientX - rect.left + 14) + 'px';
+  tt.style.top = (ev.clientY - rect.top + 10) + 'px';
+  tt.style.opacity = 1;
+}
+function hideTooltip() { document.getElementById('tooltip').style.opacity = 0; }
+
+function openPanel(d) {
+  selectedCountry = d.name;
+  searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  document.querySelectorAll('circle.dot').forEach(function(el){
+    d3.select(el).classed('selected', d3.select(el).datum().name===d.name);
+  });
+  document.getElementById('panel').classList.add('open');
+  fillPanel(d);
+}
+
+function incidentCard(it, showCountry) {
+  const idx = window.__incidentRegistry.push(it) - 1;
+  return `
+    <div class="inc" data-inc-idx="${idx}">
+      <div class="date">${fmtDate(it.d)} · ${it.city ? it.city + ', ' : ''}${showCountry ? it.country : ''}</div>
+      <h3>${it.ev || 'Untitled incident'}</h3>
+      <div class="row2">
+        <span class="k">Religion:</span> ${it.relRaw || 'Unknown'}<br>
+        <span class="k">Mode:</span> ${it.mode || 'Unknown'}<br>
+        <span class="k">Victims killed:</span> ${it.vic || 'Unknown'} &nbsp; <span class="k">Injured:</span> ${it.inj || 'Unknown'}
+      </div>
+    </div>
+  `;
+}
+
+window.__incidentRegistry = [];
+document.addEventListener('click', e => {
+  const card = e.target.closest('.inc');
+  if (!card) return;
+  const it = window.__incidentRegistry[+card.dataset.incIdx];
+  if (it) openDetail(it);
+});
+
+function openDetail(it) {
+  document.getElementById('detail-date').textContent = fmtDate(it.d);
+  document.getElementById('detail-title').textContent = it.ev || 'Untitled incident';
+  document.getElementById('detail-country').textContent = it.country || '—';
+  document.getElementById('detail-city').textContent = it.city || '—';
+  document.getElementById('detail-rel').textContent = it.relRaw || 'Unknown';
+  document.getElementById('detail-worship').textContent = it.worship || '—';
+  document.getElementById('detail-mode').textContent = it.mode || 'Unknown';
+  document.getElementById('detail-grp').textContent = it.grp || 'Unknown';
+  document.getElementById('detail-vic').textContent = it.vic || 'Unknown';
+  document.getElementById('detail-inj').textContent = it.inj || 'Unknown';
+  const linksEl = document.getElementById('detail-links');
+  const links = [];
+  if (it.src) links.push(`<a href="${it.src}" target="_blank" rel="noopener">Source ↗</a>`);
+  if (it.attachment) links.push(`<a href="${it.attachment.dataUrl}" download="${it.attachment.name}">📎 ${it.attachment.name}</a>`);
+  linksEl.innerHTML = links.length ? links.join('<br>') : '';
+  document.getElementById('detailOverlay').classList.add('open');
+}
+document.getElementById('detailClose').addEventListener('click', () => document.getElementById('detailOverlay').classList.remove('open'));
+document.getElementById('detailOverlay').addEventListener('click', e => { if (e.target.id === 'detailOverlay') e.currentTarget.classList.remove('open'); });
+
+function fillPanel(d) {
+  document.getElementById('panel-country').textContent = d.name;
+  document.getElementById('panel-meta').textContent = `${fmtN(d.items.length)} incident${d.items.length===1?'':'s'} recorded, ${yearFrom}–${yearTo}`;
+  const list = document.getElementById('panel-list');
+  const items = d.items.slice().sort((a,b)=>a.y-b.y);
+  list.innerHTML = items.map(it => incidentCard(it, false)).join('');
+}
+
+function renderSearchPanel() {
+  const results = searchResults().sort((a,b)=>a.y-b.y);
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('panel-country').textContent = 'Search results';
+  const parts = [];
+  if (searchQuery.trim()) parts.push(`“${searchQuery.trim()}”`);
+  parts.push(`${yearFrom}–${yearTo}`);
+  document.getElementById('panel-meta').textContent = `${fmtN(results.length)} match${results.length===1?'':'es'} · ${parts.join(' · ')}`;
+  document.getElementById('panel-list').innerHTML = results.map(it => incidentCard(it, true)).join('') || '<div id="panel-empty">No incidents match this search.</div>';
+}
+
+/* Legend: nested circles sharing a baseline, each labelled beside its top
+   edge with a short guide line. Labels are pushed apart when circles are
+   close in size, so they never print on top of one another. */
+function drawLegend(maxCount) {
+  const legend = document.getElementById('legend');
+  const steps = [maxCount, Math.round(maxCount*0.5), Math.max(1,Math.round(maxCount*0.15))]
+    .filter((v,i,a)=>a.indexOf(v)===i && v > 0);
+  const maxR = radiusScale(maxCount);
+  const cx = maxR + 2;
+  const base = maxR * 2 + 4;
+  const labelX = cx + maxR + 14;
+  const minGap = 12;
+
+  let prevY = -Infinity;
+  const items = steps.map(s => {
+    const r = radiusScale(s);
+    const top = base - 2 * r;
+    const ly = Math.max(top, prevY + minGap);
+    prevY = ly;
+    return { s, r, top, ly };
+  });
+  const svgH = Math.max(base, prevY + 4) + 2;
+  const svgW = labelX + 44;
+
+  const [cFew, cMany] = dotColourRange();
+  const colourKey = metric === 'victims' ? '' : `
+    <div class="title" style="margin-top:12px;">Colour: victims killed</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span>Few</span>
+      <div style="width:70px;height:8px;border-radius:2px;background:linear-gradient(90deg,${cFew},${cMany});"></div>
+      <span>Many</span>
+    </div>`;
+
+  legend.innerHTML = `<div class="title">${metric==='victims' ? 'Victims killed per country (approx.)' : 'Incidents per country'}</div>
+    <svg width="${svgW}" height="${svgH}">
+      ${items.map(it => `
+        <circle cx="${cx}" cy="${base - it.r}" r="${it.r}"></circle>
+        <line x1="${cx}" y1="${it.top}" x2="${labelX - 4}" y2="${it.ly}"></line>
+        <text x="${labelX}" y="${it.ly + 3.5}">${fmtN(it.s)}</text>`).join('')}
+    </svg>${colourKey}`;
+}
+
+const addOverlay = document.getElementById('addOverlay');
+document.getElementById('addCaseBtn').addEventListener('click', () => {
+  document.getElementById('addError').textContent = '';
+  addOverlay.classList.add('open');
+});
+document.getElementById('addClose').addEventListener('click', () => addOverlay.classList.remove('open'));
+document.getElementById('addCancel').addEventListener('click', () => addOverlay.classList.remove('open'));
+addOverlay.addEventListener('click', e => { if (e.target === addOverlay) addOverlay.classList.remove('open'); });
+
+/* ---------------- About panel ---------------- */
+const DATASET_VERSION = '1.0';
+const DATASET_UPDATED = '22 July 2026';
+
+const aboutOverlay = document.getElementById('aboutOverlay');
+document.getElementById('aboutVersion').textContent = DATASET_VERSION;
+document.getElementById('aboutUpdated').textContent = DATASET_UPDATED;
+
+document.getElementById('aboutBtn').addEventListener('click', () => {
+  aboutOverlay.classList.add('open');
+});
+document.getElementById('aboutClose').addEventListener('click', () => {
+  aboutOverlay.classList.remove('open');
+});
+aboutOverlay.addEventListener('click', e => {
+  if (e.target === aboutOverlay) aboutOverlay.classList.remove('open');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    aboutOverlay.classList.remove('open');
+    addOverlay.classList.remove('open');
+  }
+});
+
+document.getElementById('addSubmit').addEventListener('click', () => {
+  const errEl = document.getElementById('addError');
+  errEl.textContent = '';
+  errEl.innerHTML = '';
+
+  const val = id => (document.getElementById(id).value || '').trim();
+  const dateVal = document.getElementById('f-date').value;
+  const ev      = val('f-ev');
+  const city    = val('f-city');
+  const country = val('f-country');
+  const rel     = document.getElementById('f-rel').value;
+  const modeB   = document.getElementById('f-mode').value;
+  const vicRaw  = val('f-vic');
+  const inj     = val('f-inj') || 'Unknown';
+  const grp     = val('f-grp');
+  const src     = val('f-src');
+  const notes   = val('f-notes');
+
+  const missing = [];
+  if (!dateVal) missing.push('date');
+  if (!ev)      missing.push('event');
+  if (!country) missing.push('country');
+  if (!src)     missing.push('source URL');
+  if (missing.length) {
+    errEl.textContent = 'Still missing: ' + missing.join(', ') + '. '
+      + (missing.includes('source URL')
+          ? 'Every record in this dataset must be traceable to a source.' : '');
+    return;
+  }
+
+  const title = `[New case] ${dateVal} — ${country} — ${ev}`.slice(0, 200);
+  const body = [
+    '### Proposed record', '',
+    '| Field | Value |', '| --- | --- |',
+    `| Date | ${dateVal} |`,
+    `| Event | ${ev} |`,
+    `| City | ${city || '(not given)'} |`,
+    `| Country | ${country} |`,
+    `| Victims' religion | ${rel} |`,
+    `| Mode of attack | ${modeB} |`,
+    `| Victims killed | ${vicRaw || 'Unknown'} |`,
+    `| Injured | ${inj} |`,
+    `| Group / attribution | ${grp || 'Unknown'} |`,
+    `| Source | ${src} |`,
+    '',
+    '### Notes', '',
+    notes || '(none)',
+    '',
+    '### Supporting material', '',
+    'Drag any supporting files (PDF, screenshots, images) into this box before submitting.',
+    '',
+    '---',
+    '_Submitted via the interactive map. Pending curatorial review._'
+  ].join('\n');
+
+  const url = `https://github.com/${GITHUB_REPO}/issues/new`
+    + `?title=${encodeURIComponent(title)}`
+    + `&body=${encodeURIComponent(body)}`;
+
+  const win = window.open(url, '_blank');
+  if (!win || win.closed || typeof win.closed === 'undefined') {
+    errEl.innerHTML = 'Your browser blocked the new tab. '
+      + '<a href="' + url + '" target="_blank" rel="noopener">Open the report on GitHub</a>.';
+    return;
+  }
+
+  ['f-date','f-ev','f-city','f-country','f-vic','f-inj','f-grp','f-src','f-notes']
+    .forEach(id => document.getElementById(id).value = '');
+  addOverlay.classList.remove('open');
+});
+
+/* ==================================================================
+   Downloading the dataset
+   ------------------------------------------------------------------
+   Generated from what the page holds, so the file can never fall out
+   of step with the map. Carries the sixteen fields the map uses, not
+   the full research workbook.
+   ================================================================== */
+
+const EXPORT_FIELDS = [
+  ['d','date'], ['y','year'], ['ev','event'], ['city','city'],
+  ['country','country_as_recorded'], ['cc','country_mapped'],
+  ['rel','religion_grouped'], ['relRaw','religion_as_recorded'],
+  ['worship','place_of_worship'], ['mode','mode_as_recorded'],
+  ['modeB','mode_grouped'], ['vic','victims_killed_as_reported'],
+  ['vicN','victims_killed_numeric'], ['inj','injured_as_reported'],
+  ['grp','group_attribution'], ['src','source']
+];
+
+function exportRows() {
+  const rows = [EXPORT_FIELDS.map(f => f[1])];
+  window.PLORABUNT_DATA.forEach(r => {
+    rows.push(EXPORT_FIELDS.map(f => {
+      const v = r[f[0]];
+      return (v === null || v === undefined) ? '' : v;
+    }));
+  });
+  return rows;
+}
+
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function exportName(ext) {
+  return `plorabunt_dataset_${new Date().toISOString().slice(0,10)}.${ext}`;
+}
+
+document.getElementById('dlCsv').addEventListener('click', () => {
+  const note = document.getElementById('dlNote');
+  try {
+    const esc = v => {
+      const s = String(v);
+      return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    // Semicolons and a BOM, so that a double-click opens correctly in Excel
+    // on a European locale instead of dumping everything into one column.
+    const csv = '\ufeff' + exportRows().map(r => r.map(esc).join(';')).join('\r\n');
+    saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), exportName('csv'));
+    note.textContent = fmtN(window.PLORABUNT_DATA.length) + ' records';
+  } catch (e) {
+    note.textContent = 'Export failed: ' + e.message;
+  }
+});
+
+document.getElementById('dlXlsx').addEventListener('click', async () => {
+  const note = document.getElementById('dlNote');
+  note.textContent = 'Building the file…';
+  try {
+    try { await loadScriptOnce(XLSX_LOCAL); }
+    catch (e) { await loadScriptOnce(XLSX_CDN); }
+    const ws = XLSX.utils.aoa_to_sheet(exportRows());
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Plorabunt');
+    XLSX.writeFile(wb, exportName('xlsx'));
+    note.textContent = fmtN(window.PLORABUNT_DATA.length) + ' records';
+  } catch (e) {
+    note.textContent = 'Export failed: ' + e.message;
+  }
+});
+
+/* ==================================================================
+   Curator panel
+   ------------------------------------------------------------------
+   Lets an authorised curator upload an updated workbook (.xlsx/.csv),
+   see exactly what would change, and write data.js straight to the
+   repository from this page.
+
+   Access: no token stored means no button. To register a token the
+   first time, open this page with #curator at the end of the address.
+   The token is stored in this browser only. Anyone holding it can
+   write to the repository, so treat it as a password.
+   ================================================================== */
+
+const CURATOR_KEY = 'plorabunt_curator_token';
+const DATA_PATH   = 'data.js';
+const XLSX_LOCAL  = 'vendor/xlsx.full.min.js';
+const XLSX_CDN    = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+
+let RULES = null;          // normalisation.json
+let pendingResult = null;  // { records, report, sourceFile }
+
+function curToken()      { try { return localStorage.getItem(CURATOR_KEY) || ''; } catch(e) { return ''; } }
+function setCurToken(t)  { try { t ? localStorage.setItem(CURATOR_KEY, t) : localStorage.removeItem(CURATOR_KEY); } catch(e) {} }
+
+function refreshCuratorButton() {
+  const btn = document.getElementById('curatorBtn');
+  const show = !!curToken() || location.hash === '#curator';
+  btn.style.display = show ? '' : 'none';
+}
+
+/* ---------- normalisation, mirroring tools/update_data.py ---------- */
+
+async function loadRules() {
+  if (RULES) return RULES;
+  const r = await fetch('normalisation.json', { cache: 'no-store' });
+  if (!r.ok) throw new Error('normalisation.json could not be loaded (' + r.status + ')');
+  RULES = await r.json();
+  return RULES;
+}
+
+function clean(v) {
+  if (v === null || v === undefined) return '';
+  if (v instanceof Date) {
+    const p = n => String(n).padStart(2, '0');
+    return `${v.getFullYear()}${p(v.getMonth() + 1)}${p(v.getDate())}`;
+  }
+  return String(v).trim();
+}
+
+function firstDate(raw) {
+  const d = clean(raw);
+  const m = d.match(/(\d{4,8})/);
+  return m ? m[1] : '';
+}
+
+function numericFloor(raw) {
+  if (raw === null || raw === undefined) return 0;
+  if (typeof raw === 'number') return Math.trunc(raw);
+  const m = String(raw).match(/\d+/);
+  return m ? parseInt(m[0], 10) : 0;
+}
+
+function firstUrl(raw) {
+  if (!raw) return null;
+  const m = String(raw).match(/https?:\/\/\S+/);
+  return m ? m[0].replace(/[).,;]+$/, '') : null;
+}
+
+function bucketReligion(raw) {
+  const r = (raw || '').trim();
+  const buckets = RULES.religionBuckets;
+  if (buckets.includes(r)) return r;
+  const low = r.toLowerCase();
+  const hits = buckets.filter(b => low.includes(b.toLowerCase().replace(/ity$|ism$/, '')));
+  return hits.length === 1 ? hits[0] : 'Other/Unknown';
+}
+
+function bucketMode(raw) {
+  const m = (raw || '').trim().toLowerCase();
+  if (!m) return 'Other';
+  for (const rule of RULES.modeRules) {
+    if (rule.needles.some(n => m.includes(n))) return rule.label;
+  }
+  return 'Other';
+}
+
+/* similarity used to catch near-duplicates: Dice coefficient on bigrams */
+function similarity(a, b) {
+  a = (a || '').toLowerCase(); b = (b || '').toLowerCase();
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+  const grams = s => { const g = []; for (let i = 0; i < s.length - 1; i++) g.push(s.slice(i, i + 2)); return g; };
+  const A = grams(a), B = grams(b);
+  const pool = B.slice();
+  let hits = 0;
+  for (const g of A) { const i = pool.indexOf(g); if (i > -1) { pool.splice(i, 1); hits++; } }
+  return (2 * hits) / (A.length + B.length);
+}
+
+/* ---------- reading the uploaded file ---------- */
+
+function loadScriptOnce(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) return res();
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error('could not load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+function parseCsv(text) {
+  const firstLine = text.split('\n', 1)[0];
+  const delim = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false; }
+      else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === delim) { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else if (c !== '\r') field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+async function readWorkbook(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.csv') || name.endsWith('.txt')) {
+    const buf = await file.arrayBuffer();
+    let text, encoding = 'utf-8';
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(buf);
+    } catch (e) {
+      encoding = 'windows-1252';
+      text = new TextDecoder('windows-1252').decode(buf);
+    }
+    return { rows: parseCsv(text), encoding };
+  }
+  try {
+    await loadScriptOnce(XLSX_LOCAL);
+  } catch (e) {
+    console.warn('vendor/xlsx.full.min.js not found, falling back to the CDN');
+    await loadScriptOnce(XLSX_CDN);
+  }
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return { rows: XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null }), encoding: 'xlsx' };
+}
+
+/* ---------- turning rows into records ---------- */
+
+function rowsToRecords(rows) {
+  const C = RULES.columns;
+  const header = rows[0] || [];
+  for (const [name, idx] of Object.entries(C)) {
+    if (clean(header[idx]) !== name) {
+      throw new Error(`Column ${idx} is "${clean(header[idx])}" but "${name}" was expected. ` +
+                      'The layout of the file does not match the one this map was built from.');
+    }
+  }
+
+  const records = [], skipped = [], unknownCountries = new Set();
+  for (let n = 1; n < rows.length; n++) {
+    const row = rows[n] || [];
+    if (!clean(row[C['DATE']])) continue;
+    const d = firstDate(row[C['DATE']]);
+    const ev = clean(row[C['EVENT']]);
+    const country = clean(row[C['COUNTRY']]);
+    if (!d || !country) { skipped.push({ row: n + 1, ev: ev || '(no event)', why: 'missing date or country' }); continue; }
+
+    const cc = RULES.countryToMapName[country] || country;
+    if (cc.includes(',') || !cc || cc.toLowerCase() === 'unknown') unknownCountries.add(country);
+
+    const relRaw = clean(row[C["VICTIMS' RELIGION"]]) || 'Unknown';
+    const modeRaw = clean(row[C['MODE']]) || 'Unknown';
+    const vicRaw = row[C['N. VICTIMS']];
+
+    records.push({
+      d, y: d.length >= 4 ? parseInt(d.slice(0, 4), 10) : null,
+      ev: ev || 'Unknown',
+      city: clean(row[C['CITY']]) || 'Unknown',
+      country, cc,
+      rel: bucketReligion(relRaw), relRaw,
+      worship: clean(row[C['PLACE-BASED WORSHIP']]) || 'Unknown',
+      mode: modeRaw,
+      vic: clean(vicRaw) || 'Unknown',
+      inj: clean(row[C['N. INJURED']]) || 'Unknown',
+      grp: clean(row[C["KILLERS' MILITANT GROUP"]]) || 'Unknown',
+      src: firstUrl(row[C['SOURCES']]),
+      modeB: bucketMode(modeRaw),
+      vicN: numericFloor(vicRaw)
+    });
+  }
+  return { records, skipped, unknownCountries: [...unknownCountries] };
+}
+
+function buildReport(incoming) {
+  const existing = window.PLORABUNT_DATA;
+  const seen = new Set(existing.map(r => r.d + '|' + (r.ev || '').trim().toLowerCase()));
+  const byDC = new Map();
+  existing.forEach(r => {
+    const k = r.d + '|' + r.cc;
+    if (!byDC.has(k)) byDC.set(k, []);
+    byDC.get(k).push(r.ev || '');
+  });
+
+  const added = [], near = [];
+  const cutoff = RULES.duplicateCutoff || 0.82;
+  for (const r of incoming.records) {
+    if (seen.has(r.d + '|' + r.ev.trim().toLowerCase())) continue;
+    const siblings = byDC.get(r.d + '|' + r.cc) || [];
+    let best = null, bestScore = 0;
+    for (const s of siblings) {
+      const sc = similarity(r.ev, s);
+      if (sc > bestScore) { bestScore = sc; best = s; }
+    }
+    if (best && bestScore >= cutoff) near.push({ rec: r, other: best });
+    else added.push(r);
+  }
+  return { added, near, skipped: incoming.skipped, unknownCountries: incoming.unknownCountries };
+}
+
+/* ---------- writing data.js back to the repository ---------- */
+
+function serialiseRecord(r) {
+  const order = ['d','y','ev','city','country','cc','rel','relRaw','worship','mode','vic','inj','grp','src','modeB','vicN'];
+  const o = {};
+  order.forEach(k => { if (k in r) o[k] = r[k]; });
+  Object.keys(r).forEach(k => { if (!(k in o)) o[k] = r[k]; });
+  return JSON.stringify(o);
+}
+
+function buildDataJs(records) {
+  const header =
+`/* ------------------------------------------------------------------------
+   Plorabunt dataset. One incident per line.
+
+   Written by the curator panel on ${new Date().toISOString().slice(0, 10)}.
+   It can also be regenerated with: python3 tools/update_data.py <workbook>
+
+   Field notes:
+     d       date as YYYYMMDD (string)
+     y       year (number)
+     cc      country name the map uses to place the dot
+     modeB   one of: Bombing/Explosion, Armed Assault, Assassination,
+             Hostage Taking, Other
+     vic     casualties as reported, ranges and uncertainty preserved
+     vicN    numeric floor of vic, used for sizing and totals
+------------------------------------------------------------------------ */
+window.PLORABUNT_DATA = [
+`;
+  return header + records.map(serialiseRecord).join(',\n') + '\n];\n';
+}
+
+function toBase64Utf8(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+
+async function gh(path, options = {}) {
+  const url = 'https://api.github.com/repos/' + GITHUB_REPO + (path ? '/' + path : '');
+  let res;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': 'Bearer ' + curToken(),
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(options.headers || {})
+      }
+    });
+  } catch (netErr) {
+    throw new Error('the request to api.github.com never completed. This is usually a content '
+      + 'blocker, an extension, or a network that blocks the GitHub API rather than a problem '
+      + 'with the token. Try another browser or disable blockers for this page.');
+  }
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).message || ''; } catch (e) {}
+    if (res.status === 401) detail = 'The token was not accepted. Check it was copied in full.';
+    if (res.status === 404) detail = 'Repository not found, or the token has no access to it.';
+    throw new Error(`GitHub replied ${res.status}. ${detail}`);
+  }
+  return res.json();
+}
+
+async function commitFile(path, contentString, message, isBinaryBase64) {
+  let sha = null;
+  try {
+    const meta = await gh(`contents/${path}`);
+    sha = meta.sha;
+  } catch (e) { /* file does not exist yet */ }
+  return gh(`contents/${path}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      message,
+      content: isBinaryBase64 ? contentString : toBase64Utf8(contentString),
+      ...(sha ? { sha } : {})
+    })
+  });
+}
+
+/* ---------- interface ---------- */
+
+const curatorOverlay = document.getElementById('curatorOverlay');
+const curStatus = document.getElementById('curStatus');
+
+function curSay(html, kind) {
+  curStatus.className = kind || '';
+  curStatus.innerHTML = html;
+}
+
+function showCuratorStep() {
+  const signedIn = !!curToken();
+  document.getElementById('curSignin').style.display = signedIn ? 'none' : '';
+  document.getElementById('curWork').style.display   = signedIn ? '' : 'none';
+  document.getElementById('curSignOut').style.display = signedIn ? '' : 'none';
+}
+
+document.getElementById('curatorBtn').addEventListener('click', () => {
+  curatorOverlay.classList.add('open');
+  showCuratorStep();
+  curSay('');
+});
+document.getElementById('curatorClose').addEventListener('click', () => curatorOverlay.classList.remove('open'));
+curatorOverlay.addEventListener('click', e => { if (e.target === curatorOverlay) curatorOverlay.classList.remove('open'); });
+
+document.getElementById('curSignInBtn').addEventListener('click', async () => {
+  const t = document.getElementById('curTokenInput').value.trim();
+  if (!t) { curSay('Paste a token first.', 'cur-err'); return; }
+  setCurToken(t);
+  curSay('Checking the token…');
+  try {
+    const repo = await gh('');
+    if (!repo || !repo.permissions || !repo.permissions.push) {
+      setCurToken('');
+      curSay('That token can read the repository but not write to it. It needs Contents: read and write.', 'cur-err');
+      return;
+    }
+    document.getElementById('curTokenInput').value = '';
+    curSay('Signed in. This browser can now publish updates.', 'cur-ok');
+    showCuratorStep();
+    refreshCuratorButton();
+  } catch (e) {
+    setCurToken('');
+    curSay('Sign-in failed. ' + e.message, 'cur-err');
+  }
+});
+
+document.getElementById('curSignOut').addEventListener('click', () => {
+  setCurToken('');
+  pendingResult = null;
+  document.getElementById('curPublish').style.display = 'none';
+  document.getElementById('curReport').innerHTML = '';
+  showCuratorStep();
+  refreshCuratorButton();
+  curSay('Token removed from this browser.', 'cur-ok');
+});
+
+document.getElementById('curFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('curPublish').style.display = 'none';
+  document.getElementById('curReport').innerHTML = '';
+  pendingResult = null;
+  curSay('Reading ' + file.name + '…');
+  try {
+    await loadRules();
+    const { rows, encoding } = await readWorkbook(file);
+    const incoming = rowsToRecords(rows);
+    const report = buildReport(incoming);
+    pendingResult = { records: window.PLORABUNT_DATA.concat(report.added), report, file, encoding };
+    renderCuratorReport(report, incoming, encoding, file);
+    curSay('');
+  } catch (err) {
+    curSay('Could not read that file. ' + err.message, 'cur-err');
+  }
+});
+
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+function renderCuratorReport(report, incoming, encoding, file) {
+  const el = document.getElementById('curReport');
+  const parts = [];
+
+  parts.push(`<p class="cur-line"><strong>${fmtN(incoming.records.length)}</strong> usable rows read from
+    <em>${esc(file.name)}</em>. The map currently holds <strong>${fmtN(window.PLORABUNT_DATA.length)}</strong> records.</p>`);
+
+  if (encoding === 'windows-1252') {
+    parts.push(`<p class="cur-warn">This CSV is not UTF-8. Characters outside the Latin alphabet,
+      such as Arabic, Cyrillic or diacritics, may already have been destroyed by the export.
+      Check them before publishing, or upload the .xlsx instead.</p>`);
+  }
+
+  parts.push(`<h4>${report.added.length} record${report.added.length === 1 ? '' : 's'} to be added</h4>`);
+  if (report.added.length) {
+    parts.push('<ul class="cur-list">' + report.added.slice(0, 60).map(r =>
+      `<li><span class="cur-d">${esc(r.d)}</span> ${esc(r.cc)} — ${esc(r.ev.slice(0, 70))}</li>`).join('') +
+      (report.added.length > 60 ? `<li>… and ${report.added.length - 60} more</li>` : '') + '</ul>');
+  } else {
+    parts.push('<p class="cur-line">Nothing new. The map is already in step with this file.</p>');
+  }
+
+  if (report.near.length) {
+    parts.push(`<h4 class="cur-warn-h">${report.near.length} held back as probable duplicates</h4>
+      <p class="cur-line">Same date and country, near-identical wording. Usually this means the file
+      still carries a typo that was corrected in the published data. These will <strong>not</strong>
+      be added.</p>`);
+    parts.push('<ul class="cur-list">' + report.near.slice(0, 40).map(n =>
+      `<li><span class="cur-d">${esc(n.rec.d)}</span> ${esc(n.rec.cc)}<br>
+        <span class="cur-sub">file:&nbsp;&nbsp;${esc(n.rec.ev.slice(0, 72))}</span><br>
+        <span class="cur-sub">map:&nbsp;&nbsp;&nbsp;${esc(n.other.slice(0, 72))}</span></li>`).join('') +
+      (report.near.length > 40 ? `<li>… and ${report.near.length - 40} more</li>` : '') + '</ul>');
+  }
+
+  if (report.skipped.length) {
+    parts.push(`<h4 class="cur-warn-h">${report.skipped.length} row${report.skipped.length === 1 ? '' : 's'} skipped</h4>`);
+    parts.push('<ul class="cur-list">' + report.skipped.slice(0, 20).map(s =>
+      `<li>row ${s.row}: ${esc(s.why)} — ${esc(s.ev.slice(0, 60))}</li>`).join('') + '</ul>');
+  }
+
+  if (report.unknownCountries.length) {
+    parts.push(`<h4 class="cur-warn-h">Country names the map cannot place</h4>
+      <p class="cur-line">Records carrying these will be counted but will have no dot. Either fix the
+      COUNTRY column, or add the spelling to <code>normalisation.json</code>.</p>`);
+    parts.push('<ul class="cur-list">' + report.unknownCountries.map(c => `<li>${esc(c)}</li>`).join('') + '</ul>');
+  }
+
+  const noSrc = report.added.filter(r => !r.src).length;
+  if (noSrc) {
+    parts.push(`<p class="cur-warn">${noSrc} of the new records carry no source URL.</p>`);
+  }
+
+  el.innerHTML = parts.join('');
+  document.getElementById('curPublish').style.display = report.added.length ? '' : 'none';
+}
+
+document.getElementById('curPublish').addEventListener('click', async () => {
+  if (!pendingResult) return;
+  const btn = document.getElementById('curPublish');
+  btn.disabled = true;
+  const n = pendingResult.report.added.length;
+  curSay('Publishing…');
+  try {
+    const body = buildDataJs(pendingResult.records);
+    await commitFile(DATA_PATH, body,
+      `Add ${n} record${n === 1 ? '' : 's'} from ${pendingResult.file.name} (curator panel)`);
+
+    if (document.getElementById('curAlsoSource').checked) {
+      const buf = await pendingResult.file.arrayBuffer();
+      let bin = '';
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.length; i += 0x8000) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      }
+      await commitFile('data/' + pendingResult.file.name, btoa(bin),
+        'Update source workbook (curator panel)', true);
+    }
+
+    curSay(`Published. ${n} record${n === 1 ? '' : 's'} added, ${fmtN(pendingResult.records.length)} in total.
+      The public map updates within a minute or two. Reload with Cmd+Shift+R to see it.`, 'cur-ok');
+    document.getElementById('curPublish').style.display = 'none';
+    pendingResult = null;
+  } catch (err) {
+    curSay('Publishing failed. ' + err.message + ' Nothing was changed.', 'cur-err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* Keep <main> in step with the side panel, so the toolbar can move out of its
+   way wherever the panel is opened or closed from. */
+(function () {
+  const panel = document.getElementById('panel');
+  const main = document.querySelector('main');
+  const sync = () => main.classList.toggle('panel-open', panel.classList.contains('open'));
+  new MutationObserver(sync).observe(panel, { attributes: true, attributeFilter: ['class'] });
+  sync();
+})();
+
+window.addEventListener('hashchange', refreshCuratorButton);
+refreshCuratorButton();
+
+</script>
+</body>
+</html>
