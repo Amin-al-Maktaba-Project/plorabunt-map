@@ -35,8 +35,8 @@
   }
   :root[data-theme="dark"]{
     --bg:#0a0a0a; --bg2:#111111; --line:#2a2626; --ink:#ece7e2; --ink-dim:#9a938d;
-    --red:#c23440; --red-dim:#7a1a22; --red-glow:rgba(194,52,64,0.35);
-    --link:#8fb3e8; --tint:rgba(194,52,64,0.14); --red-hover:#d9505b;
+    --red:#9a2c36; --red-dim:#5c1a21; --red-glow:rgba(154,44,54,0.35);
+    --link:#8fb3e8; --tint:rgba(154,44,54,0.16); --red-hover:#b2404a;
     --field:#141010; --pop:#151212; --track:#1c1818; --overlay:rgba(10,10,10,0.75);
     --land:#2c2725; --land-stroke:#4a4340; --dot-stroke:#1a0a0b; --dot-selected:#ffffff;
     --err:#ff8a8e; --ok:#7ea87e; --shadow:rgba(0,0,0,0.5);
@@ -49,8 +49,10 @@
 
   #sidebar{width:280px;flex-shrink:0;border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;padding:20px 20px 16px;gap:16px;}
   .inst-logo{display:block;padding-bottom:14px;border-bottom:1px solid var(--line);}
-  .inst-logo img{display:block;max-width:170px;max-height:44px;height:auto;}
-  :root[data-theme="dark"] .inst-logo img{filter:brightness(0) invert(1);opacity:.9;}
+  .inst-logo img{display:block;width:190px;max-width:100%;height:auto;}
+  .inst-logo .logo-dark{display:none;}
+  :root[data-theme="dark"] .inst-logo .logo-light{display:none;}
+  :root[data-theme="dark"] .inst-logo .logo-dark{display:block;}
   .brand{line-height:1;}
   .brand .kicker{font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--red);margin-bottom:5px;display:block;}
   .brand h1{font-family:'Noto Serif',Georgia,serif;font-weight:700;font-size:36px;margin:0;letter-spacing:0.2px;}
@@ -59,7 +61,7 @@
   .stat{flex:1;}
   .stat .n{font-family:'Noto Serif',Georgia,serif;font-size:19px;color:var(--red);line-height:1;white-space:nowrap;}
   .stat .l{font-size:8.5px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);margin-top:3px;}
-  #showingLine{font-size:10.5px;color:var(--ink-dim);padding-bottom:12px;border-bottom:1px solid var(--line);margin-top:-6px;}
+  #showingLine{font-size:10.5px;color:var(--ink-dim);padding-bottom:4px;margin-top:-6px;}
   #showingLine strong{color:var(--ink);font-weight:600;}
 
   .panel-section{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line);}
@@ -123,11 +125,11 @@
   #searchInput{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;}
   #searchInput:focus{outline:none;border-color:var(--red);}
   #searchInput::placeholder{color:var(--ink-dim);}
-  .yr-row{display:flex;align-items:center;gap:6px;}
+  .yr-row{display:flex;align-items:center;gap:6px;width:100%;}
   .yr-input{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12px;padding:6px 6px;border-radius:4px;width:60px;flex-shrink:0;}
   .yr-input:focus{outline:none;border-color:var(--red);}
-  .date-input{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:11px;padding:6px 6px;border-radius:4px;width:112px;flex-shrink:0;color-scheme:dark;}
-  :root[data-theme="light"] .date-input{color-scheme:light;}
+  .date-input{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:11px;padding:7px 6px;border-radius:4px;flex:1 1 0;min-width:0;width:auto;color-scheme:light;}
+  :root[data-theme="dark"] .date-input{color-scheme:dark;}
   .date-input:focus{outline:none;border-color:var(--red);}
   #searchClear{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:12px;padding:7px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
   #searchClear:hover{border-color:var(--red);color:var(--ink);}
@@ -168,7 +170,7 @@
   #tooltip b{font-family:'Noto Serif',Georgia,serif;font-size:13px;}
   #tooltip .cnt{color:var(--red);}
 
-  #legend{background:var(--overlay);border:1px solid var(--line);padding:12px 16px;border-radius:4px;font-size:10px;color:var(--ink-dim);max-width:230px;}
+  #legend{background:var(--overlay);border:1px solid var(--line);padding:12px 14px;border-radius:4px;font-size:10px;color:var(--ink-dim);width:100%;}
   #legend svg text{fill:var(--ink-dim);font-size:10px;}
   #legend svg line{stroke:var(--ink-dim);stroke-width:0.6;}
   #legend svg circle{fill:none;stroke:var(--red);stroke-width:1;}
@@ -286,7 +288,8 @@
 <div id="app">
   <nav id="sidebar">
     <a class="inst-logo" href="https://www.fscire.it" target="_blank" rel="noopener" title="Fondazione per le scienze religiose Giovanni XXIII">
-      <img src="vendor/fscire-logo.svg" alt="FSCIRE, Fondazione per le scienze religiose Giovanni XXIII" onerror="this.parentNode.style.display='none'">
+      <img class="logo-light" src="vendor/fscire-logo.png" alt="FSCIRE, Fondazione per le scienze religiose Giovanni XXIII" onerror="this.style.display='none'">
+      <img class="logo-dark" src="vendor/fscire-logo-dark.png" alt="FSCIRE, Fondazione per le scienze religiose Giovanni XXIII" onerror="this.style.display='none'">
     </a>
     <div class="brand">
       <span class="kicker">A global database, 1982–2026</span>
@@ -628,7 +631,7 @@ function updateThemeButton() {
 }
 /* Dot colours for each theme: light end for few victims, dark end for many. */
 function dotColourRange() {
-  return currentTheme() === 'light' ? ['#dfa0a6', '#5e121a'] : ['#c4585c', '#3d0a0d'];
+  return currentTheme() === 'light' ? ['#dfa0a6', '#5e121a'] : ['#8e4148', '#3a0d12'];
 }
 document.getElementById('themeBtn').addEventListener('click', () => {
   const next = currentTheme() === 'light' ? 'dark' : 'light';
