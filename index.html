@@ -6,7 +6,7 @@
 <title>Attacks on Places of Worship — A Global Record</title>
 <script>
   /* Apply the saved theme before anything is drawn, so the page never flashes
-     in the wrong colours. Dark is the default. */
+     in the wrong colours. Light is the default, matching the FSCIRE website. */
   (function () {
     try {
       var t = localStorage.getItem('plorabunt_theme');
@@ -14,50 +14,50 @@
     } catch (e) {}
   })();
 </script>
-<style>
-  /* Self-hosted so the page depends on nobody. If the files are missing the
-     browser falls back to Georgia, which is close enough that nothing breaks. */
-  @font-face{font-family:'PT Serif';font-style:normal;font-weight:400;font-display:swap;
-    src:url('vendor/PTSerif-Regular.woff2') format('woff2'),url('vendor/PTSerif-Regular.ttf') format('truetype');}
-  @font-face{font-family:'PT Serif';font-style:normal;font-weight:700;font-display:swap;
-    src:url('vendor/PTSerif-Bold.woff2') format('woff2'),url('vendor/PTSerif-Bold.ttf') format('truetype');}
-  @font-face{font-family:'PT Serif';font-style:italic;font-weight:400;font-display:swap;
-    src:url('vendor/PTSerif-Italic.woff2') format('woff2'),url('vendor/PTSerif-Italic.ttf') format('truetype');}
-  @font-face{font-family:'PT Serif';font-style:italic;font-weight:700;font-display:swap;
-    src:url('vendor/PTSerif-BoldItalic.woff2') format('woff2'),url('vendor/PTSerif-BoldItalic.ttf') format('truetype');}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Noto Serif and Noto Sans are the typefaces of fscire.it. If the fonts
+     cannot load, the page falls back to Georgia and the system sans-serif. -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <script src="vendor/d3.min.js"></script>
 <script src="vendor/topojson-client.min.js"></script>
 <script src="data.js"></script>
 <style>
+  /* Light theme, built on the FSCIRE palette (fscire.it):
+     brand #A12933, text #222 / #383838, secondary #707070, links #1C509A. */
   :root{
+    --bg:#ffffff; --bg2:#ffffff; --line:#e2e0de; --ink:#222222; --ink-dim:#707070;
+    --red:#A12933; --red-dim:#d9a3a8; --red-glow:rgba(161,41,51,0.3);
+    --link:#1C509A; --tint:rgba(161,41,51,0.08); --red-hover:#86212a;
+    --field:#ffffff; --pop:#ffffff; --track:#efedeb; --overlay:rgba(255,255,255,0.9);
+    --land:#e9e6e3; --land-stroke:#cfcac5; --dot-stroke:#ffffff; --dot-selected:#222222;
+    --err:#A12933; --ok:#3d7a3d; --shadow:rgba(0,0,0,0.12);
+  }
+  :root[data-theme="dark"]{
     --bg:#0a0a0a; --bg2:#111111; --line:#2a2626; --ink:#ece7e2; --ink-dim:#9a938d;
-    --red:#c1272d; --red-dim:#7a1a1e; --red-glow:rgba(193,39,45,0.35);
+    --red:#c23440; --red-dim:#7a1a22; --red-glow:rgba(194,52,64,0.35);
+    --link:#8fb3e8; --tint:rgba(194,52,64,0.14); --red-hover:#d9505b;
     --field:#141010; --pop:#151212; --track:#1c1818; --overlay:rgba(10,10,10,0.75);
     --land:#2c2725; --land-stroke:#4a4340; --dot-stroke:#1a0a0b; --dot-selected:#ffffff;
     --err:#ff8a8e; --ok:#7ea87e; --shadow:rgba(0,0,0,0.5);
   }
-  :root[data-theme="light"]{
-    --bg:#f6f3ef; --bg2:#ffffff; --line:#ddd5ce; --ink:#1d1a18; --ink-dim:#6b635d;
-    --red:#b3232a; --red-dim:#e0a3a6; --red-glow:rgba(179,35,42,0.3);
-    --field:#ffffff; --pop:#ffffff; --track:#eee6e0; --overlay:rgba(246,243,239,0.88);
-    --land:#e4ddd6; --land-stroke:#c9bfb6; --dot-stroke:#ffffff; --dot-selected:#1d1a18;
-    --err:#b3232a; --ok:#3d7a3d; --shadow:rgba(0,0,0,0.12);
-  }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;overflow:hidden;}
-  a{color:var(--red);}
-  a:hover{color:#e8555b;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;overflow:hidden;}
+  a{color:var(--link);}
+  a:hover{color:var(--red);}
   #app{display:flex;flex-direction:row;height:100vh;}
 
   #sidebar{width:280px;flex-shrink:0;border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;padding:20px 20px 16px;gap:16px;}
+  .inst-logo{display:block;padding-bottom:14px;border-bottom:1px solid var(--line);}
+  .inst-logo img{display:block;max-width:170px;max-height:44px;height:auto;}
+  :root[data-theme="dark"] .inst-logo img{filter:brightness(0) invert(1);opacity:.9;}
   .brand{line-height:1;}
   .brand .kicker{font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--red);margin-bottom:5px;display:block;}
-  .brand h1{font-family:'PT Serif',Georgia,serif;font-weight:700;font-size:36px;margin:0;letter-spacing:0.2px;}
+  .brand h1{font-family:'Noto Serif',Georgia,serif;font-weight:700;font-size:36px;margin:0;letter-spacing:0.2px;}
 
   .stats{display:flex;gap:6px;border-top:1px solid var(--line);padding:12px 0 10px;}
   .stat{flex:1;}
-  .stat .n{font-family:'PT Serif',Georgia,serif;font-size:19px;color:var(--red);line-height:1;white-space:nowrap;}
+  .stat .n{font-family:'Noto Serif',Georgia,serif;font-size:19px;color:var(--red);line-height:1;white-space:nowrap;}
   .stat .l{font-size:8.5px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);margin-top:3px;}
   #showingLine{font-size:10.5px;color:var(--ink-dim);padding-bottom:12px;border-bottom:1px solid var(--line);margin-top:-6px;}
   #showingLine strong{color:var(--ink);font-weight:600;}
@@ -70,7 +70,7 @@
   .ctrl-label{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-dim);white-space:nowrap;}
   .chips{display:flex;gap:6px;flex-wrap:wrap;}
   .chip{border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11px;padding:5px 10px;border-radius:100px;cursor:pointer;transition:all .15s;letter-spacing:0.02em;}
-  .chip.active{border-color:var(--red);color:var(--ink);background:rgba(193,39,45,0.12);}
+  .chip.active{border-color:var(--red);color:var(--ink);background:var(--tint);}
   .chip:hover{border-color:var(--red-dim);color:var(--ink);}
 
   .segmented{display:flex;border:1px solid var(--line);border-radius:100px;overflow:hidden;width:fit-content;flex-shrink:0;background:var(--overlay);}
@@ -84,7 +84,7 @@
   .dropdown-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;width:260px;max-height:300px;overflow-y:auto;background:var(--pop);border:1px solid var(--line);border-radius:6px;padding:8px;z-index:15;box-shadow:0 8px 24px var(--shadow);}
   .dropdown-panel.open{display:block;}
   .dropdown-row{display:flex;align-items:center;gap:8px;padding:6px 6px;border-radius:4px;cursor:pointer;font-size:12px;}
-  .dropdown-row:hover{background:rgba(193,39,45,0.1);}
+  .dropdown-row:hover{background:var(--tint);}
   .dropdown-row input{accent-color:var(--red);}
   .dropdown-row .cnt{margin-left:auto;color:var(--ink-dim);font-size:10.5px;}
   .dropdown-sep{border-top:1px solid var(--line);margin:6px 0;}
@@ -98,14 +98,14 @@
   #curatorOverlay.open{display:flex;}
   #curatorModal{width:660px;max-width:calc(100vw - 32px);max-height:min(90vh,920px);overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
   #curatorModal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line);}
-  #curatorModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0;}
+  #curatorModal-head h2{font-family:'Noto Serif',Georgia,serif;font-size:20px;margin:0;}
   #curatorModal-head button{background:none;border:none;color:var(--ink-dim);font-size:18px;cursor:pointer;}
   #curatorModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:20px 24px 24px;font-size:12.5px;line-height:1.6;color:var(--ink-dim);}
   #curatorModal-body h4{color:var(--ink);font-size:12.5px;margin:18px 0 6px;}
   #curatorModal-body h4.cur-warn-h{color:var(--red);}
   #curatorModal-body input[type=password],#curatorModal-body input[type=file]{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;}
   #curatorModal-body code{background:var(--field);padding:1px 4px;border-radius:3px;font-size:11.5px;}
-  .cur-note{font-size:11.5px;line-height:1.55;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:rgba(193,39,45,0.05);margin:0 0 14px;}
+  .cur-note{font-size:11.5px;line-height:1.55;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:var(--tint);margin:0 0 14px;}
   .cur-line{margin:0 0 8px;}
   .cur-warn{color:var(--red);margin:8px 0;}
   .cur-list{margin:6px 0 12px;padding-left:16px;max-height:230px;overflow-y:auto;font-size:11.5px;}
@@ -118,7 +118,7 @@
   .cur-row{display:flex;gap:10px;align-items:center;margin-top:10px;}
 
   .primary-btn{border:1px solid var(--red);background:var(--red);color:#fff;font-size:11.5px;font-weight:600;padding:9px 12px;border-radius:6px;cursor:pointer;letter-spacing:0.02em;white-space:nowrap;width:100%;}
-  .primary-btn:hover{background:#a51f24;}
+  .primary-btn:hover{background:var(--red-hover);}
 
   #searchInput{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;}
   #searchInput:focus{outline:none;border-color:var(--red);}
@@ -140,7 +140,7 @@
   main.panel-open #zoomControls{right:calc(max(280px,min(400px,42vw)) + 16px);}
   #zoomControls button{border:none;background:transparent;color:var(--ink-dim);font-size:15px;line-height:1;width:32px;height:32px;cursor:pointer;}
   #zoomControls button + button{border-top:1px solid var(--line);}
-  #zoomControls button:hover{color:var(--ink);background:rgba(193,39,45,0.12);}
+  #zoomControls button:hover{color:var(--ink);background:var(--tint);}
   #zoomControls button#zoomReset{font-size:12px;}
 
   #top10Panel{background:var(--pop);width:280px;}
@@ -165,7 +165,7 @@
   circle.dot.selected{fill-opacity:1;stroke:var(--dot-selected);stroke-width:1.2;}
 
   #tooltip{position:absolute;pointer-events:none;background:var(--pop);border:1px solid var(--red-dim);padding:8px 12px;font-size:12px;border-radius:3px;opacity:0;transition:opacity .1s;max-width:220px;line-height:1.5;z-index:5;box-shadow:0 4px 14px var(--shadow);}
-  #tooltip b{font-family:'PT Serif',Georgia,serif;font-size:13px;}
+  #tooltip b{font-family:'Noto Serif',Georgia,serif;font-size:13px;}
   #tooltip .cnt{color:var(--red);}
 
   #legend{background:var(--overlay);border:1px solid var(--line);padding:12px 16px;border-radius:4px;font-size:10px;color:var(--ink-dim);max-width:230px;}
@@ -181,14 +181,14 @@
   aside#panel{--panel-w:max(280px,min(400px,42vw));position:absolute;top:0;right:0;height:100%;z-index:9;width:0;overflow:hidden;border-left:1px solid var(--line);background:var(--bg2);transition:width .2s ease;display:flex;flex-direction:column;}
   aside#panel.open{width:max(280px,min(400px,42vw));box-shadow:-18px 0 40px var(--shadow);}
   #panel-head{padding:20px 22px 14px;border-bottom:1px solid var(--line);flex-shrink:0;position:relative;}
-  #panel-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0 0 4px;}
+  #panel-head h2{font-family:'Noto Serif',Georgia,serif;font-size:20px;margin:0 0 4px;}
   #panel-head .meta{font-size:11px;color:var(--ink-dim);}
   #panel-close{position:absolute;top:14px;right:14px;cursor:pointer;color:var(--ink-dim);font-size:20px;line-height:1;background:none;border:none;padding:4px 8px;}
   #panel-close:hover{color:var(--ink);}
   #panel-list{overflow-y:auto;flex:1;padding:8px 22px 30px;}
   .inc{padding:14px 0;border-bottom:1px solid var(--line);}
   .inc .date{font-size:11px;color:var(--red);letter-spacing:0.02em;}
-  .inc h3{font-family:'PT Serif',Georgia,serif;font-weight:400;font-size:15px;margin:3px 0 6px;line-height:1.3;}
+  .inc h3{font-family:'Noto Serif',Georgia,serif;font-weight:400;font-size:15px;margin:3px 0 6px;line-height:1.3;}
   .inc .row2{font-size:11.5px;color:var(--ink-dim);line-height:1.6;}
   .inc .row2 span.k{color:var(--ink);}
   .inc a{font-size:11px;}
@@ -197,15 +197,15 @@
   #listView{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden;}
   #listView.open{display:flex;}
   #listView-head{padding:68px 32px 16px;border-bottom:1px solid var(--line);flex-shrink:0;}
-  #listView-head h2{font-family:'PT Serif',Georgia,serif;font-size:24px;margin:0 0 4px;}
+  #listView-head h2{font-family:'Noto Serif',Georgia,serif;font-size:24px;margin:0 0 4px;}
   #listView-head .meta{font-size:12px;color:var(--ink-dim);}
   #listView-body{flex:1;overflow-y:auto;padding:0 32px 30px;}
   table#listTable{width:100%;border-collapse:collapse;}
   table#listTable thead th{position:sticky;top:0;background:var(--bg);text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-dim);padding:12px 10px;border-bottom:1px solid var(--line);}
   table#listTable tbody tr{cursor:pointer;border-bottom:1px solid var(--line);}
-  table#listTable tbody tr:hover{background:rgba(193,39,45,0.08);}
+  table#listTable tbody tr:hover{background:var(--tint);}
   table#listTable tbody td{padding:11px 10px;font-size:12.5px;vertical-align:top;}
-  table#listTable tbody td.ev{font-family:'PT Serif',Georgia,serif;font-size:13.5px;max-width:280px;}
+  table#listTable tbody td.ev{font-family:'Noto Serif',Georgia,serif;font-size:13.5px;max-width:280px;}
   table#listTable tbody td.num{color:var(--red);text-align:right;}
 
   ::-webkit-scrollbar{width:8px;}
@@ -216,7 +216,7 @@
   #aboutOverlay.open{display:flex;}
   #aboutModal{width:640px;max-width:calc(100vw - 32px);max-height:min(88vh,900px);overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
   #aboutModal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line);}
-  #aboutModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:20px;margin:0;}
+  #aboutModal-head h2{font-family:'Noto Serif',Georgia,serif;font-size:20px;margin:0;}
   #aboutModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:20px 24px 26px;font-size:12.5px;line-height:1.65;color:var(--ink-dim);}
   #aboutModal-body h3{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--red);margin:22px 0 8px;font-weight:600;}
   #aboutModal-body h3:first-child{margin-top:0;}
@@ -239,11 +239,11 @@
   #addOverlay.open{display:flex;}
   #addModal{width:480px;max-width:calc(100vw - 32px);max-height:min(88vh,860px);overflow:hidden;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
   #addModal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);}
-  #addModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:19px;margin:0;}
+  #addModal-head h2{font-family:'Noto Serif',Georgia,serif;font-size:19px;margin:0;}
   #addModal-head button,#aboutModal-head button{background:none;border:none;color:var(--ink-dim);font-size:18px;cursor:pointer;}
   #addModal-head button:hover,#aboutModal-head button:hover{color:var(--ink);}
   #addModal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px;}
-  .review-note{font-size:11.5px;line-height:1.55;color:var(--ink-dim);margin:0 0 4px;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:rgba(193,39,45,0.05);}
+  .review-note{font-size:11.5px;line-height:1.55;color:var(--ink-dim);margin:0 0 4px;padding:10px 12px;border:1px solid var(--line);border-left:2px solid var(--red);border-radius:4px;background:var(--tint);}
   #addModal-body textarea{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:8px 10px;border-radius:4px;width:100%;font-family:inherit;resize:vertical;}
   #addModal-body textarea:focus{outline:none;border-color:var(--red);}
   #addError a{color:var(--red);text-decoration:underline;}
@@ -261,7 +261,7 @@
   #addCancel{background:transparent;border:1px solid var(--line);color:var(--ink-dim);}
   #addCancel:hover{color:var(--ink);border-color:var(--ink-dim);}
   #addSubmit{background:var(--red);border:1px solid var(--red);color:#fff;font-weight:600;}
-  #addSubmit:hover{background:#a51f24;}
+  #addSubmit:hover{background:var(--red-hover);}
 
   .inc{cursor:pointer;}
   .inc:hover h3{color:var(--red);}
@@ -271,7 +271,7 @@
   #detailModal{width:560px;max-height:88vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
   #detailModal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:22px 26px 16px;border-bottom:1px solid var(--line);}
   #detailModal-head .date{font-size:12px;color:var(--red);letter-spacing:0.02em;margin-bottom:6px;}
-  #detailModal-head h2{font-family:'PT Serif',Georgia,serif;font-size:23px;margin:0;line-height:1.3;}
+  #detailModal-head h2{font-family:'Noto Serif',Georgia,serif;font-size:23px;margin:0;line-height:1.3;}
   #detailClose{background:none;border:none;color:var(--ink-dim);font-size:19px;cursor:pointer;flex-shrink:0;}
   #detailClose:hover{color:var(--ink);}
   #detailModal-body{padding:20px 26px 26px;display:flex;flex-direction:column;gap:16px;}
@@ -285,6 +285,9 @@
 <body>
 <div id="app">
   <nav id="sidebar">
+    <a class="inst-logo" href="https://www.fscire.it" target="_blank" rel="noopener" title="Fondazione per le scienze religiose Giovanni XXIII">
+      <img src="vendor/fscire-logo.svg" alt="FSCIRE, Fondazione per le scienze religiose Giovanni XXIII" onerror="this.parentNode.style.display='none'">
+    </a>
     <div class="brand">
       <span class="kicker">A global database, 1982–2026</span>
       <h1>Plorabunt</h1>
@@ -470,6 +473,10 @@
       deliberately surveyed, the categories of event deliberately excluded, and the procedure by
       which an entry is verified before publication.</p>
 
+      <h3>Institution</h3>
+      <p><a href="https://www.fscire.it" target="_blank" rel="noopener">Fondazione per le scienze
+      religiose Giovanni XXIII (FSCIRE)</a>, Bologna.</p>
+
       <h3>Credits</h3>
       <div class="credit-row">
         <div>
@@ -614,14 +621,14 @@ const fmtN = n => Number(n).toLocaleString('en-GB');
 /* ---------------- Light and dark themes ---------------- */
 const THEME_KEY = 'plorabunt_theme';
 function currentTheme() {
-  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
 }
 function updateThemeButton() {
   document.getElementById('themeBtn').textContent = currentTheme() === 'light' ? '☾ Dark' : '☀ Light';
 }
 /* Dot colours for each theme: light end for few victims, dark end for many. */
 function dotColourRange() {
-  return currentTheme() === 'light' ? ['#e8a0a3', '#6e0f14'] : ['#c4585c', '#3d0a0d'];
+  return currentTheme() === 'light' ? ['#dfa0a6', '#5e121a'] : ['#c4585c', '#3d0a0d'];
 }
 document.getElementById('themeBtn').addEventListener('click', () => {
   const next = currentTheme() === 'light' ? 'dark' : 'light';
