@@ -1,0 +1,7 @@
+{
+  "backend": "anthropic",
+  "anthropic": { "model": "claude-sonnet-5-5", "max_tokens": 4096 },
+  "ollama": { "model": "qwen2.5:14b", "url": "http://localhost:11434" },
+  "search": { "max_articles": 30 },
+  "mark_ai_assisted": true
+}
