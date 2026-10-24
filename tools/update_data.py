@@ -27,6 +27,7 @@ Requires: pip install openpyxl
 """
 
 import argparse
+import csv
 import difflib
 import json
 import re
@@ -42,7 +43,21 @@ except ImportError:
 
 # --------------------------------------------------------------------------
 # Normalisation rules
+#
+# These live in ../normalisation.json so that this script and the curator panel
+# in index.html apply exactly the same rules. Edit the JSON, never these
+# fallbacks, which exist only so the script still runs if the file is missing.
 # --------------------------------------------------------------------------
+
+def _load_shared_rules():
+    path = Path(__file__).resolve().parent.parent / "normalisation.json"
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except FileNotFoundError:
+        print(f"  ! {path.name} not found, falling back to the built-in tables")
+        return None
+
 
 # Spellings the map can place. Anything not listed passes through unchanged;
 # if the result is not a name the map knows, the dot is silently dropped, so
@@ -87,6 +102,16 @@ MODE_RULES = [
                            "stab", "killing", "massacre", "ambush", "assault", "attack with",
                            "melee", "beat", "lynch", "arson attack"]),
 ]
+
+
+_SHARED = _load_shared_rules()
+if _SHARED:
+    COUNTRY_TO_MAP_NAME = _SHARED["countryToMapName"]
+    RELIGION_BUCKETS = _SHARED["religionBuckets"]
+    MODE_RULES = [(r["label"], r["needles"]) for r in _SHARED["modeRules"]]
+    DUPLICATE_CUTOFF = _SHARED.get("duplicateCutoff", 0.82)
+else:
+    DUPLICATE_CUTOFF = 0.82
 
 
 def bucket_religion(raw: str) -> str:
@@ -150,7 +175,7 @@ def clean(v):
 # Reading
 # --------------------------------------------------------------------------
 
-COLUMNS = {
+COLUMNS = _SHARED["columns"] if _SHARED else {
     "DATE": 0, "EVENT": 2, "PLACE-BASED WORSHIP": 3, "CITY": 5, "COUNTRY": 6,
     "MODE": 7, "N. INJURED": 9, "N. VICTIMS": 10, "VICTIMS' RELIGION": 12,
     "KILLERS' MILITANT GROUP": 20, "SOURCES": 31,
@@ -160,11 +185,37 @@ FIELD_ORDER = ["d", "y", "ev", "city", "country", "cc", "rel", "relRaw", "worshi
                "mode", "vic", "inj", "grp", "src", "modeB", "vicN"]
 
 
-def read_workbook(path: Path):
+def read_rows(path: Path):
+    """Yield the header row and then the data rows, from .xlsx or .csv.
+
+    Excel on macOS exports CSV as semicolon-separated latin-1 by default, so
+    both that and the usual comma-separated UTF-8 are accepted."""
+    if path.suffix.lower() in (".csv", ".txt"):
+        raw = path.read_bytes()
+        for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+            try:
+                text = raw.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        first = text.split("\n", 1)[0]
+        delimiter = ";" if first.count(";") > first.count(",") else ","
+        print(f"  reading CSV, encoding {encoding}, delimiter '{delimiter}'")
+        if encoding in ("cp1252", "latin-1"):
+            print("    note: this file is not UTF-8. Check that accented characters and")
+            print("    non-Latin scripts survived the export before importing.")
+        reader = csv.reader(text.splitlines(), delimiter=delimiter, quotechar='"')
+        rows = list(reader)
+        return rows[0], rows[1:]
+
     wb = openpyxl.load_workbook(path, data_only=True, read_only=True)
     ws = wb[wb.sheetnames[0]]
-    rows = ws.iter_rows(values_only=True)
-    header = next(rows)
+    it = ws.iter_rows(values_only=True)
+    return next(it), list(it)
+
+
+def read_workbook(path: Path):
+    header, rows = read_rows(path)
 
     for name, idx in COLUMNS.items():
         actual = clean(header[idx]) if idx < len(header) else ""
@@ -176,8 +227,10 @@ def read_workbook(path: Path):
 
     records, skipped, unknown_countries = [], [], set()
     for n, row in enumerate(rows, start=2):
-        if row[0] in (None, ""):
+        if not row or row[0] in (None, "") or not str(row[0]).strip():
             continue
+        if len(row) <= max(COLUMNS.values()):
+            row = list(row) + [None] * (max(COLUMNS.values()) + 1 - len(row))
         d = first_date(row[0])
         ev = clean(row[COLUMNS["EVENT"]])
         country = clean(row[COLUMNS["COUNTRY"]])
@@ -262,8 +315,9 @@ def write_data_js(path: Path, records):
 # --------------------------------------------------------------------------
 
 def main():
-    ap = argparse.ArgumentParser(description="Update data.js from the Plorabunt workbook.")
-    ap.add_argument("workbook", type=Path)
+    ap = argparse.ArgumentParser(
+        description="Update data.js from the Plorabunt workbook (.xlsx or .csv).")
+    ap.add_argument("workbook", type=Path, help="path to the .xlsx or .csv export")
     ap.add_argument("--data", type=Path, default=Path(__file__).resolve().parent.parent / "data.js")
     ap.add_argument("--rebuild", action="store_true",
                     help="regenerate from scratch, discarding manual edits in data.js")
@@ -296,7 +350,7 @@ def main():
             by_dc.setdefault((r.get("d"), r.get("cc")), []).append(r.get("ev") or "")
         for r in candidates:
             siblings = by_dc.get((r["d"], r["cc"]), [])
-            match = difflib.get_close_matches(r["ev"], siblings, n=1, cutoff=0.82)
+            match = difflib.get_close_matches(r["ev"], siblings, n=1, cutoff=DUPLICATE_CUTOFF)
             if match and not args.force:
                 near.append((r, match[0]))
             else:
