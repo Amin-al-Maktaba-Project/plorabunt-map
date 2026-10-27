@@ -145,6 +145,20 @@
   #zoomControls button:hover{color:var(--ink);background:var(--tint);}
   #zoomControls button#zoomReset{font-size:12px;}
 
+  /* Globe view */
+  #globe-wrap{display:none;flex:1;position:relative;overflow:hidden;min-height:0;}
+  #globe-wrap.open{display:block;}
+  canvas#globe{display:block;cursor:grab;touch-action:none;outline:none;}
+  canvas#globe:active{cursor:grabbing;}
+  canvas#globe:focus-visible{box-shadow:inset 0 0 0 2px var(--red);}
+  #globeControls{position:absolute;bottom:16px;left:16px;z-index:8;display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--overlay);}
+  #globeControls button{border:none;background:transparent;color:var(--ink-dim);font-size:15px;line-height:1;min-width:32px;height:32px;cursor:pointer;padding:0 8px;}
+  #globeControls button + button{border-left:1px solid var(--line);}
+  #globeControls button:hover{color:var(--ink);background:var(--tint);}
+  #globeControls button.small{font-size:12px;}
+  main.panel-open #globeHint{display:none;}
+  #globeHint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--ink-dim);background:var(--overlay);border:1px solid var(--line);border-radius:100px;padding:4px 12px;pointer-events:none;white-space:nowrap;}
+
   #top10Panel{background:var(--pop);width:280px;}
   .t10-row{display:flex;align-items:center;gap:8px;margin:7px 0;cursor:pointer;}
   .t10-row .name{font-size:11px;width:100px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -156,7 +170,7 @@
   #pagefooter{padding:8px 28px;border-top:1px solid var(--line);font-size:9.5px;color:var(--ink-dim);flex-shrink:0;line-height:1.4;}
 
   main{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0;position:relative;}
-  main > #map-wrap, main > #listView{flex:1;}
+  main > #map-wrap, main > #globe-wrap, main > #listView{flex:1;}
   #map-wrap{flex:1;position:relative;overflow:hidden;min-height:0;}
   svg#map{width:100%;height:100%;display:block;cursor:grab;}
   svg#map:active{cursor:grabbing;}
@@ -166,9 +180,9 @@
   circle.dot:hover{fill-opacity:1;filter:drop-shadow(0 0 6px var(--red-glow));}
   circle.dot.selected{fill-opacity:1;stroke:var(--dot-selected);stroke-width:1.2;}
 
-  #tooltip{position:absolute;pointer-events:none;background:var(--pop);border:1px solid var(--red-dim);padding:8px 12px;font-size:12px;border-radius:3px;opacity:0;transition:opacity .1s;max-width:220px;line-height:1.5;z-index:5;box-shadow:0 4px 14px var(--shadow);}
-  #tooltip b{font-family:'Noto Serif',Georgia,serif;font-size:13px;}
-  #tooltip .cnt{color:var(--red);}
+  #tooltip,#gtooltip{position:absolute;pointer-events:none;background:var(--pop);border:1px solid var(--red-dim);padding:8px 12px;font-size:12px;border-radius:3px;opacity:0;transition:opacity .1s;max-width:220px;line-height:1.5;z-index:5;box-shadow:0 4px 14px var(--shadow);}
+  #tooltip b,#gtooltip b{font-family:'Noto Serif',Georgia,serif;font-size:13px;}
+  #tooltip .cnt,#gtooltip .cnt{color:var(--red);}
 
   #legend{background:var(--overlay);border:1px solid var(--line);padding:12px 14px;border-radius:4px;font-size:10px;color:var(--ink-dim);width:100%;}
   #legend svg text{fill:var(--ink-dim);font-size:10px;}
@@ -353,6 +367,7 @@
     <div id="mapControlsLeft">
       <div class="segmented" id="sidebarViewToggle">
         <button data-view="map" class="active">Map</button>
+        <button data-view="globe">Globe</button>
         <button data-view="list">List</button>
       </div>
       <div class="segmented" id="metricToggle">
@@ -375,6 +390,18 @@
         <button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
         <button id="zoomReset" title="Show the whole world" aria-label="Reset zoom">⟲</button>
       </div>
+    </div>
+    <div id="globe-wrap">
+      <canvas id="globe" tabindex="0" role="img"
+        aria-label="Interactive globe showing the number of recorded incidents per country. Drag to rotate, scroll or pinch to zoom, arrow keys also rotate. The List view gives the same information as a table."></canvas>
+      <div id="gtooltip"></div>
+      <div id="globeControls">
+        <button type="button" id="gSpin" class="small" title="Start or stop the slow rotation" aria-label="Start or stop rotation">Rotate</button>
+        <button type="button" id="gZoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button type="button" id="gZoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+        <button type="button" id="gReset" class="small" title="Back to the starting view" aria-label="Reset the globe">⟲</button>
+      </div>
+      <div id="globeHint">Drag to rotate · scroll to zoom · click a dot for its incidents</div>
     </div>
     <div id="listView">
       <div id="listView-head">
@@ -454,7 +481,9 @@
       <p>Points are aggregated by country, not by exact location. The size of a point reflects the
       number of <em>recorded incidents</em> in that country, or the number of victims killed when
       that metric is selected; colour deepens with the number of victims killed. A large point
-      therefore means "many entries in this record", which is not the same as "the most violence".</p>
+      therefore means "many entries in this record", which is not the same as "the most violence".
+      The Globe view shows the same points, with the same filters and sizes, on a globe that can be
+      rotated and zoomed; the List view gives the same information as a table.</p>
 
       <h3>Coverage and limits</h3>
       <p>The density of this record reflects the availability and the language of reporting as much
@@ -656,6 +685,7 @@ let selectedCountry = null;
 let metric = 'incidents';
 let searchQuery = '';
 let viewMode = 'map';
+const mapLike = () => viewMode === 'map' || viewMode === 'globe';
 
 document.querySelectorAll('#sidebarViewToggle button').forEach(b => {
   b.addEventListener('click', () => {
@@ -663,7 +693,8 @@ document.querySelectorAll('#sidebarViewToggle button').forEach(b => {
     document.querySelectorAll('#sidebarViewToggle button').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     document.getElementById('map-wrap').style.display = viewMode === 'map' ? '' : 'none';
-    document.getElementById('panel').classList.toggle('open', viewMode === 'map' && (selectedCountry || isSearchActive()));
+    document.getElementById('globe-wrap').classList.toggle('open', viewMode === 'globe');
+    document.getElementById('panel').classList.toggle('open', mapLike() && (selectedCountry || isSearchActive()));
     document.getElementById('listView').classList.toggle('open', viewMode === 'list');
     render();
   });
@@ -817,6 +848,7 @@ document.getElementById('panel-close').addEventListener('click', () => {
   document.getElementById('searchInput').value = '';
   document.getElementById('panel').classList.remove('open');
   document.querySelectorAll('circle.dot.selected').forEach(c=>c.classList.remove('selected'));
+  drawGlobe();
 });
 
 const MANUAL_CENTROID = {
@@ -931,6 +963,7 @@ d3.json('vendor/countries-110m.json')
     centroidByName[f.properties.name] = MANUAL_CENTROID[f.properties.name] || d3.geoCentroid(f);
   });
   window.__centroidByName = centroidByName;
+  window.__countries = countries;
 
   const countryList = document.getElementById('countryList');
   const knownCountries = Array.from(new Set(window.PLORABUNT_DATA.map(d=>d.country))).sort();
@@ -946,6 +979,197 @@ d3.json('vendor/countries-110m.json')
 
   render();
 });
+
+/* ---------------- Globe view ----------------
+   The same dots, sizes, colours and filters as the map, on an orthographic globe.
+   Drawn on a canvas. Drag to rotate, wheel or pinch to zoom, arrow keys and +/- work
+   too. Nothing here changes the data; it is only another way of looking at it. */
+const G = { canvas:null, ctx:null, proj:null, w:0, h:0, dpr:1, rot:[-30,-20,0], zoom:1,
+            dots:[], hit:[], fillFor:null, spin:false, hover:null, raf:0 };
+const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+G.spin = !REDUCED_MOTION;
+const GLOBE_START = { rot:[-30,-20,0], zoom:1 };
+const clampN = (v,a,b) => Math.max(a, Math.min(b, v));
+
+function globePalette() {
+  return currentTheme() === 'dark'
+    ? { sea:'#141010', land:'#2c2725', stroke:'#1a1514', grat:'rgba(255,255,255,0.05)', rim:'#3a3330', shade:'rgba(0,0,0,0.38)' }
+    : { sea:'#f8f6f4', land:'#dcd7d2', stroke:'#ffffff', grat:'rgba(0,0,0,0.05)', rim:'#cfcac5', shade:'rgba(60,40,30,0.10)' };
+}
+
+function drawGlobe() {
+  if (viewMode !== 'globe' || !G.ctx || !G.w || !window.__countries) return;
+  const ctx = G.ctx, w = G.w, h = G.h, pal = globePalette();
+  const R = Math.min(w, h) / 2 * 0.9 * G.zoom;
+  const proj = G.proj.scale(R).translate([w/2, h/2]).rotate(G.rot);
+  const path = d3.geoPath(proj, ctx);
+  ctx.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.beginPath(); path({type:'Sphere'}); ctx.fillStyle = pal.sea; ctx.fill();
+  ctx.beginPath(); path(d3.geoGraticule10()); ctx.strokeStyle = pal.grat; ctx.lineWidth = 0.6; ctx.stroke();
+  ctx.beginPath(); path(window.__countries); ctx.fillStyle = pal.land; ctx.fill();
+  ctx.strokeStyle = pal.stroke; ctx.lineWidth = 0.5; ctx.stroke();
+
+  // soft shading towards the rim, so the sphere reads as a sphere
+  const cx = w/2, cy = h/2;
+  const g = ctx.createRadialGradient(cx - R*0.25, cy - R*0.25, R*0.2, cx, cy, R);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, pal.shade);
+  ctx.beginPath(); path({type:'Sphere'}); ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath(); path({type:'Sphere'}); ctx.strokeStyle = pal.rim; ctx.lineWidth = 1; ctx.stroke();
+
+  // dots: only those on the visible half, biggest first so small ones stay on top
+  const centre = [-G.rot[0], -G.rot[1]];
+  G.hit = [];
+  G.dots.forEach(d => {
+    if (d3.geoDistance(d.c, centre) > Math.PI/2 - 0.03) return;
+    const p = proj(d.c); if (!p) return;
+    const r = Math.max(d.r, d.count > 0 ? 2.5 : 0);
+    const sel = d.name === selectedCountry;
+    ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 2*Math.PI);
+    ctx.globalAlpha = 0.85; ctx.fillStyle = G.fillFor(d); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.lineWidth = sel ? 2 : 0.8;
+    ctx.strokeStyle = sel ? getComputedStyle(document.documentElement).getPropertyValue('--dot-selected').trim()
+                          : getComputedStyle(document.documentElement).getPropertyValue('--dot-stroke').trim();
+    ctx.stroke();
+    G.hit.push({ d, x:p[0], y:p[1], r });
+  });
+}
+
+function globeFrame() {
+  G.raf = 0;
+  if (viewMode !== 'globe') return;
+  if (G.spin && !G.hover && !document.hidden) G.rot = [G.rot[0] + 0.08, G.rot[1], 0];
+  drawGlobe();
+  if (G.spin) globeSchedule();
+}
+function globeSchedule() { if (!G.raf) G.raf = requestAnimationFrame(globeFrame); }
+
+function updateGlobe(dotData, fillFor) {
+  G.dots = dotData.filter(d => d.c);       // already sorted, biggest first
+  G.fillFor = fillFor;
+  drawGlobe();
+}
+
+function globeSelect(d) {
+  if (viewMode === 'globe' && d && d.c) globeFocus(d.c); else drawGlobe();
+}
+
+function globeFocus(c) {
+  G.spin = false; syncSpinButton();
+  const from = G.rot.slice(), to = [-c[0], clampN(-c[1], -60, 60), 0];
+  to[0] = from[0] + (((to[0] - from[0] + 540) % 360) - 180);     // shortest way round
+  if (REDUCED_MOTION) { G.rot = to; drawGlobe(); return; }
+  const t0 = performance.now(), D = 650;
+  (function step(now) {
+    const t = Math.min(1, (now - t0) / D), e = t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+    G.rot = [from[0] + (to[0]-from[0])*e, from[1] + (to[1]-from[1])*e, 0];
+    drawGlobe();
+    if (t < 1) requestAnimationFrame(step);
+  })(t0);
+}
+
+function syncSpinButton() {
+  const b = document.getElementById('gSpin');
+  if (!b) return;
+  b.textContent = G.spin ? 'Pause' : 'Rotate';
+  b.setAttribute('aria-pressed', G.spin ? 'true' : 'false');
+}
+
+(function globeSetup() {
+  const wrap = document.getElementById('globe-wrap');
+  const cv = document.getElementById('globe');
+  const tip = document.getElementById('gtooltip');
+  G.canvas = cv; G.ctx = cv.getContext('2d');
+  G.proj = d3.geoOrthographic().clipAngle(90).precision(0.6);
+
+  function resize() {
+    const r = wrap.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    G.w = r.width; G.h = r.height; G.dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(G.w * G.dpr); cv.height = Math.round(G.h * G.dpr);
+    cv.style.width = G.w + 'px'; cv.style.height = G.h + 'px';
+    drawGlobe();
+  }
+  if (window.ResizeObserver) new ResizeObserver(resize).observe(wrap);
+  window.addEventListener('resize', resize);
+  document.querySelectorAll('#sidebarViewToggle button').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.view === 'globe') { resize(); globeSchedule(); }
+  }));
+
+  const setZoom = z => { G.zoom = clampN(z, 0.7, 6); drawGlobe(); };
+  function hitAt(e) {
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    for (let i = G.hit.length - 1; i >= 0; i--) {
+      const h = G.hit[i];
+      if (Math.hypot(h.x - x, h.y - y) <= h.r + 3) return { h, x, y };
+    }
+    return null;
+  }
+  function hideTip() { tip.style.opacity = 0; G.hover = null; cv.style.cursor = ''; }
+
+  const ptrs = new Map(); let lastDist = 0, moved = 0;
+  const dist = () => { const a = [...ptrs.values()]; return Math.hypot(a[0][0]-a[1][0], a[0][1]-a[1][1]); };
+
+  cv.addEventListener('pointerdown', e => {
+    cv.setPointerCapture(e.pointerId);
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    moved = 0; G.spin = false; syncSpinButton(); hideTip();
+    if (ptrs.size === 2) lastDist = dist();
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!ptrs.has(e.pointerId)) {
+      const hit = hitAt(e);
+      if (!hit) { hideTip(); return; }
+      G.hover = hit.h.d; cv.style.cursor = 'pointer';
+      const d = hit.h.d;
+      tip.innerHTML = `<b>${d.name}</b><br><span class="cnt">${fmtN(d.count)}</span> ${metric==='victims' ? 'victims killed (approx.)' : 'incident'+(d.count===1?'':'s')+' recorded'}`;
+      tip.style.left = (hit.x + 14) + 'px'; tip.style.top = (hit.y + 10) + 'px'; tip.style.opacity = 1;
+      return;
+    }
+    const prev = ptrs.get(e.pointerId), dx = e.clientX - prev[0], dy = e.clientY - prev[1];
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (ptrs.size === 1) {
+      moved += Math.abs(dx) + Math.abs(dy);
+      const k = 0.35 / G.zoom;
+      G.rot = [G.rot[0] + dx*k, clampN(G.rot[1] - dy*k, -90, 90), 0];
+      drawGlobe();
+    } else if (ptrs.size === 2) {
+      const d = dist(); if (lastDist) setZoom(G.zoom * d / lastDist); lastDist = d;
+    }
+  });
+  const endPtr = e => {
+    const wasClick = ptrs.size === 1 && moved < 5 && e.type === 'pointerup';
+    ptrs.delete(e.pointerId); lastDist = 0;
+    if (wasClick) { const hit = hitAt(e); if (hit) openPanel(hit.h.d); }
+  };
+  cv.addEventListener('pointerup', endPtr);
+  cv.addEventListener('pointercancel', endPtr);
+  cv.addEventListener('pointerleave', () => { if (!ptrs.size) hideTip(); });
+  cv.addEventListener('wheel', e => { e.preventDefault(); setZoom(G.zoom * Math.exp(-e.deltaY * 0.0015)); }, { passive:false });
+  cv.addEventListener('keydown', e => {
+    const step = 10 / G.zoom;
+    const keys = { ArrowLeft:[-step,0], ArrowRight:[step,0], ArrowUp:[0,step], ArrowDown:[0,-step] };
+    if (keys[e.key]) {
+      e.preventDefault(); G.spin = false; syncSpinButton();
+      G.rot = [G.rot[0] + keys[e.key][0], clampN(G.rot[1] + keys[e.key][1], -90, 90), 0]; drawGlobe();
+    } else if (e.key === '+' || e.key === '=') { e.preventDefault(); setZoom(G.zoom * 1.3); }
+    else if (e.key === '-') { e.preventDefault(); setZoom(G.zoom / 1.3); }
+  });
+
+  document.getElementById('gZoomIn').addEventListener('click', () => setZoom(G.zoom * 1.4));
+  document.getElementById('gZoomOut').addEventListener('click', () => setZoom(G.zoom / 1.4));
+  document.getElementById('gReset').addEventListener('click', () => {
+    G.rot = GLOBE_START.rot.slice(); G.zoom = GLOBE_START.zoom; drawGlobe();
+  });
+  document.getElementById('gSpin').addEventListener('click', () => {
+    if (REDUCED_MOTION && !G.spin) { G.spin = true; } else { G.spin = !G.spin; }
+    syncSpinButton(); if (G.spin) globeSchedule();
+  });
+  syncSpinButton();
+  // the hint is only useful the first few seconds
+  setTimeout(() => { const h = document.getElementById('globeHint'); if (h) h.style.display = 'none'; }, 9000);
+})();
 
 function render() {
   if (!projection) return;
@@ -971,7 +1195,7 @@ function render() {
     const p = projection(c);
     if (!p) return null;
     const count = valueOf(items);
-    return { name, items, count, vic: d3.sum(items, i=>i.vicN), x: p[0], y: p[1],
+    return { name, items, count, vic: d3.sum(items, i=>i.vicN), x: p[0], y: p[1], c,
              r: Math.max(radiusScale(count), count > 0 ? 2.5 : 0) };
   }).filter(Boolean).sort((a,b)=>b.count-a.count);
 
@@ -995,13 +1219,14 @@ function render() {
     .on('mouseleave', hideTooltip)
     .on('click', (ev,d) => openPanel(d));
   merged.order();
+  updateGlobe(dotData, fillFor);
 
   drawLegend(maxCount);
   drawTop10(dotData);
   renderListView(data);
-  if (viewMode === 'map' && isSearchActive()) {
+  if (mapLike() && isSearchActive()) {
     renderSearchPanel();
-  } else if (viewMode === 'map' && selectedCountry) {
+  } else if (mapLike() && selectedCountry) {
     const d = dotData.find(x=>x.name===selectedCountry);
     if (d) fillPanel(d); else { document.getElementById('panel').classList.remove('open'); selectedCountry=null; }
   } else {
@@ -1047,6 +1272,7 @@ function openPanel(d) {
   });
   document.getElementById('panel').classList.add('open');
   fillPanel(d);
+  globeSelect(d);
 }
 
 function incidentCard(it, showCountry) {
