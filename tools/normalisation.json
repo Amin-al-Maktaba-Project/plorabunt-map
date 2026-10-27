@@ -1,0 +1,219 @@
+{
+  "_comment": "Shared normalisation rules. Read by tools/update_data.py and by the curator panel in index.html. Edit here only. occasionRules: first rule that matches the PARTICULAR OCCASION text wins (case-insensitive regular expressions); empty, 'Unknown', 'No', 'None' or 'N/A' gives 'Not recorded', no match gives 'Other'.",
+  "columns": {
+    "DATE": 0,
+    "PARTICULAR OCCASION": 1,
+    "EVENT": 2,
+    "PLACE-BASED WORSHIP": 3,
+    "PLACE OF WORSHIP": 4,
+    "CITY": 5,
+    "COUNTRY": 6,
+    "MODE": 7,
+    "N. INJURED": 9,
+    "N. VICTIMS": 10,
+    "VICTIMS' RELIGION": 12,
+    "KILLERS' MILITANT GROUP": 20,
+    "SOURCES": 31
+  },
+  "countryToMapName": {
+    "Ancash, Peru": "Peru",
+    "Ayacucho, Peru": "Peru",
+    "Huamanga, Peru": "Peru",
+    "Lambayeque, Peru": "Peru",
+    "Borno State, Nigeria": "Nigeria",
+    "Gombe (State), Nigeria": "Nigeria",
+    "Kaduna State, Nigeria": "Nigeria",
+    "Ondo State, Nigeria": "Nigeria",
+    "Punjab, India": "India",
+    "Rajasthan, India": "India",
+    "Tamil Nadu, India": "India",
+    "California, United States": "United States of America",
+    "Texas, United States": "United States of America",
+    "United States": "United States of America",
+    "Chihuahua State, Mexico": "Mexico",
+    "Magallanes And Chilean Antarctica, Chile": "Chile",
+    "Central Mali": "Mali",
+    "Northern Ireland": "United Kingdom",
+    "Northern Ireland, United Kingdom": "United Kingdom",
+    "Bosnia-Herzegovina": "Bosnia and Herz.",
+    "Central African Republic": "Central African Rep.",
+    "Democratic Republic of the Congo": "Dem. Rep. Congo",
+    "South Sudan": "S. Sudan",
+    "Saint Lucia": "__SaintLucia__",
+    "Khyber Agency In Federally Administered Tribal Areas (Fata)": "Pakistan",
+    "Kurram Agency In Federally Administered Tribal Areas (Fata)": "Pakistan"
+  },
+  "religionBuckets": [
+    "Islam",
+    "Christianity",
+    "Hinduism",
+    "Buddhism",
+    "Sikhism",
+    "Judaism"
+  ],
+  "modeRules": [
+    {
+      "label": "Bombing/Explosion",
+      "needles": [
+        "bomb",
+        "explos",
+        "blast",
+        "grenade",
+        "ied",
+        "mortar",
+        "incendiary"
+      ]
+    },
+    {
+      "label": "Assassination",
+      "needles": [
+        "assassin"
+      ]
+    },
+    {
+      "label": "Hostage Taking",
+      "needles": [
+        "hostage",
+        "kidnap",
+        "abduct",
+        "barricade",
+        "hijack"
+      ]
+    },
+    {
+      "label": "Armed Assault",
+      "needles": [
+        "armed assault",
+        "shoot",
+        "gunfire",
+        "firearm",
+        "firing",
+        "fire on",
+        "stab",
+        "killing",
+        "massacre",
+        "ambush",
+        "assault",
+        "attack with",
+        "melee",
+        "beat",
+        "lynch",
+        "arson attack"
+      ]
+    }
+  ],
+  "duplicateCutoff": 0.82,
+  "occasionRules": [
+    {
+      "label": "Festival or holy day",
+      "patterns": [
+        "\\beid\\b",
+        "\\beaster\\b",
+        "\\bchristmas\\b",
+        "\\bdiwali\\b",
+        "\\bfestival\\b",
+        "\\bnavratri\\b",
+        "\\bdussehra\\b",
+        "\\bvaisakhi\\b",
+        "\\bbaisakhi\\b",
+        "\\bpassover\\b",
+        "\\byom\\b",
+        "\\bashura\\b",
+        "\\bmuharram\\b",
+        "\\bnowruz\\b",
+        "\\bholiday\\b",
+        "\\bfeast\\b",
+        "\\bpilgrim",
+        "\\bholy\\b",
+        "\\bshemini\\b",
+        "\\bsimchat\\b",
+        "\\bsukkot\\b",
+        "\\bpurim\\b",
+        "\\bhanukkah\\b",
+        "\\brosh hashan",
+        "\\bpentecost\\b",
+        "\\bpalm sunday\\b",
+        "\\bgood friday\\b",
+        "\\bepiphany\\b",
+        "\\bmawlid\\b",
+        "\\blaylat\\b",
+        "\\barbaeen\\b",
+        "\\bholi\\b",
+        "\\biftar\\b"
+      ]
+    },
+    {
+      "label": "Friday prayer",
+      "patterns": [
+        "\\bfriday\\b",
+        "\\bjum[uo']?a[h]?\\b"
+      ]
+    },
+    {
+      "label": "Sabbath / Shabbat",
+      "patterns": [
+        "\\bsabbath\\b",
+        "\\bshabbat\\b",
+        "\\bshabbos\\b",
+        "\\bsaturday\\b"
+      ]
+    },
+    {
+      "label": "Funeral or procession",
+      "patterns": [
+        "\\bfuneral",
+        "\\bprocession",
+        "\\bburial",
+        "\\bmemorial"
+      ]
+    },
+    {
+      "label": "Sunday service / Mass",
+      "patterns": [
+        "\\bsunday\\b",
+        "\\bmass\\b",
+        "\\bliturgy",
+        "\\bservice"
+      ]
+    },
+    {
+      "label": "Prayer, worship or ceremony",
+      "patterns": [
+        "\\bpray",
+        "\\bworship",
+        "\\btaraweeh",
+        "\\btarawih",
+        "\\bfajr\\b",
+        "\\bdhuhr\\b",
+        "\\bzuhr\\b",
+        "\\basr\\b",
+        "\\bmaghrib\\b",
+        "\\bisha\\b",
+        "\\bnamaz\\b",
+        "\\bpuja\\b",
+        "\\bkirtan\\b",
+        "\\bmeditat",
+        "\\bevening\\b",
+        "\\bmorning\\b",
+        "\\bmeeting\\b",
+        "\\bceremony\\b",
+        "cerimon",
+        "ceremon",
+        "\\bobservance",
+        "\\bvigil",
+        "\\boffering",
+        "\\bprasad\\b",
+        "\\bp[uū]j[aā]\\b",
+        "\\bgathering",
+        "\\bcongregation",
+        "\\bdevotion",
+        "\\bmissa\\b",
+        "\\bcommunion",
+        "\\bbaptism",
+        "\\bwedding",
+        "\\bretreat",
+        "\\bsermon"
+      ]
+    }
+  ]
+}
