@@ -181,6 +181,35 @@
   .detail-ritual .k{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--red);margin-right:6px;}
   .detail-ritual .h{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--red);margin-bottom:4px;display:block;}
 
+  #exControls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--ink-dim);}
+  #exControls select{background:var(--field);border:1px solid var(--line);color:var(--ink);font-size:12.5px;padding:6px 8px;border-radius:4px;font-family:inherit;margin-left:4px;}
+  #exControls .chk{display:flex;align-items:center;gap:6px;cursor:pointer;}
+  .ex-btn{border:1px solid var(--line);background:var(--overlay);color:var(--ink-dim);font-size:12px;padding:7px 14px;border-radius:100px;cursor:pointer;font-family:inherit;}
+  .ex-btn:hover{color:var(--ink);border-color:var(--ink-dim);}
+  .ex-btn.primary{background:var(--red);border-color:var(--red);color:#fff;}
+  .ex-btn.primary:hover{background:var(--red-hover);}
+  .ycol{fill:transparent;cursor:pointer;}
+  .ycol:hover{fill:var(--tint);}
+  svg.ex rect[data-sel]{cursor:pointer;}
+  svg.ex rect.ex-sel{stroke:var(--ink);stroke-width:1.6;}
+  button.ex-cell{display:block;width:100%;border:none;border-radius:3px;padding:9px 4px;font:inherit;font-weight:600;cursor:pointer;}
+  button.ex-cell.ex-sel,button.ex-bar.ex-sel .trk{outline:2px solid var(--ink);outline-offset:1px;}
+  button.ex-cell:hover{outline:2px solid var(--ink-dim);outline-offset:1px;}
+  button.ex-bar{width:100%;background:none;border:none;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer;}
+  button.ex-bar:hover .lab{text-decoration:underline;}
+  button.ex-rowlink{background:none;border:none;padding:0;font:inherit;color:var(--ink);cursor:pointer;text-align:left;}
+  button.ex-rowlink:hover{text-decoration:underline;}
+  .ex-drill-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+  table.ex-table{width:100%;border-collapse:collapse;}
+  table.ex-table thead th{position:sticky;top:0;background:var(--bg2);text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-dim);padding:10px 10px;border-bottom:1px solid var(--line);}
+  table.ex-table tbody tr{cursor:pointer;border-bottom:1px solid var(--line);}
+  table.ex-table tbody tr:hover{background:var(--tint);}
+  table.ex-table tbody td{padding:9px 10px;font-size:12.5px;vertical-align:top;}
+  table.ex-table tbody td.ev{font-family:'Noto Serif',Georgia,serif;font-size:13.5px;max-width:300px;}
+  table.ex-table tbody td:first-child{white-space:nowrap;}
+  table.ex-table tbody td.num{color:var(--red);text-align:right;}
+  .ex-scroll{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:4px;}
+
   /* Globe view */
   #globe-wrap{display:none;flex:1;position:relative;overflow:hidden;min-height:0;}
   #globe-wrap.open{display:block;}
@@ -229,6 +258,9 @@
   #legend .row{display:flex;align-items:center;gap:8px;margin:5px 0;}
   #legend svg{overflow:visible;display:block;}
   #legend .title{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;color:var(--ink-dim);}
+  #legend .lg-row{display:flex;align-items:flex-end;gap:16px;}
+  #legend .lg-colour .title{margin-bottom:6px;}
+  #legend .lg-colour{padding-bottom:2px;}
 
   aside#panel{--panel-w:max(280px,min(400px,42vw));position:absolute;top:0;right:0;height:100%;z-index:9;width:0;overflow:hidden;border-left:1px solid var(--line);background:var(--bg2);transition:width .2s ease;display:flex;flex-direction:column;}
   aside#panel.open{width:max(280px,min(400px,42vw));box-shadow:-18px 0 40px var(--shadow);}
@@ -355,11 +387,11 @@
   .field-block .ctrl-label{font-size:10.5px;text-transform:none;letter-spacing:0;color:var(--ink-dim);}
   .sidebar-footer{margin-top:auto;border-top:none;font-size:9.5px;opacity:.85;}
   /* bottom right, below Australia, to the left of the zoom buttons */
-  #legendFloat{position:absolute;right:64px;bottom:50px;z-index:7;width:190px;pointer-events:none;transition:right .2s ease;}
+  #legendFloat{position:absolute;right:64px;bottom:46px;z-index:7;width:max-content;max-width:330px;pointer-events:none;transition:right .2s ease;}
   main.panel-open #legendFloat{right:calc(max(280px,min(400px,42vw)) + 64px);}
   main[data-view="globe"] #legendFloat{right:16px;}
   main.panel-open[data-view="globe"] #legendFloat{right:calc(max(280px,min(400px,42vw)) + 16px);}
-  #legendFloat #legend{pointer-events:auto;padding:10px 12px;}
+  #legendFloat #legend{pointer-events:auto;padding:9px 12px 10px;width:max-content;}
   #resetBtn{display:none;}   /* the sidebar has "Reset all"; the button stays in the page because the script clicks it */
 </style>
 </head>
@@ -460,6 +492,13 @@
       <div id="explore-head">
         <h2>Explore the record</h2>
         <div class="meta" id="explore-meta"></div>
+        <div id="exControls">
+          <label>Period, from <select id="exFrom"></select></label>
+          <label>to <select id="exTo"></select></label>
+          <button type="button" class="ex-btn" id="exWhole">Whole dataset</button>
+          <button type="button" class="ex-btn primary" id="exShowAll">Show every incident in this period</button>
+          <label class="chk"><input type="checkbox" id="exUseFilters"> Also apply the filters on the left</label>
+        </div>
       </div>
       <div id="explore-body"></div>
     </div>
@@ -544,8 +583,9 @@
       therefore means "many entries in this record", which is not the same as "the most violence".
       The Globe view shows the same points, with the same filters and sizes, on a globe that can be
       rotated and zoomed; the List view gives the same information as a table. The Explore view
-      groups the same records, under the same filters, by year, mode of attack, victims' religion
-      and the occasion on which the attack took place.</p>
+      groups the whole record, or a period you choose, by year, mode of attack, victims' religion
+      and the occasion on which the attack took place; every chart can be opened down to the
+      individual incidents.</p>
 
       <h3>Coverage and limits</h3>
       <p>The density of this record reflects the availability and the language of reporting as much
@@ -1047,8 +1087,10 @@ d3.json('vendor/countries-110m.json')
 });
 
 /* ---------------- Explore view ----------------
-   The same filtered records, grouped in a few ways so that anyone can ask their own question.
-   Every chart follows the filters on the left and the Incidents / Victims killed switch. */
+   Works on the whole dataset, or on a period you choose, and does not depend on the
+   filters on the left unless you tick the box. Every chart element can be clicked to
+   open the incidents behind it, and "Show every incident" lists them all. The
+   Incidents / Victims killed switch still applies. */
 const isKnown = v => { const t = String(v == null ? '' : v).trim().toLowerCase(); return !!t && !t.startsWith('unknown') && !['no','none','n/a','—','-'].includes(t); };
 const OCC_ORDER = ['Prayer, worship or ceremony','Friday prayer','Sunday service / Mass','Festival or holy day','Funeral or procession','Sabbath / Shabbat','Other','Not recorded'];
 const EX_PALETTE = {
@@ -1056,12 +1098,30 @@ const EX_PALETTE = {
   dark:  ['#c4545e','#cfc8c2','#8e4148','#6f9be0','#d4b24a','#a39a92','#3f5d8c','#5a5350']
 };
 const EX_NEUTRAL = { light: '#cfcac5', dark: '#4a4340' };
-let exSplit = 'modeB';
+const EX_YEARS = (() => { const ys = window.PLORABUNT_DATA.map(d => d.y).filter(y => y); return [Math.min(...ys), Math.max(...ys)]; })();
+let exSplit = 'modeB', exFrom = EX_YEARS[0], exTo = EX_YEARS[1], exUseFilters = false;
+let exSel = null;            // { id, title, pred }
+let exRows = [];             // rows currently listed, for the click handler
 
-document.querySelectorAll('#exSplitToggle button').forEach(b => b.addEventListener('click', () => {
-  exSplit = b.dataset.split;
-  renderExplore(filteredData());
-}));
+function exBase() {
+  const whole = exFrom === EX_YEARS[0] && exTo === EX_YEARS[1];
+  const d = exUseFilters ? filteredData() : window.PLORABUNT_DATA;
+  return whole ? d : d.filter(r => r.y >= exFrom && r.y <= exTo);
+}
+const exLabel = (d, field) => field === 'occB' ? (d.occB || 'Not recorded') : (d[field] || 'Unknown');
+
+function exMakeSel(type, a, b) {
+  const field = exSplit;
+  switch (type) {
+    case 'seg':  return { id: `seg|${field}|${a}|${b}`, title: `${a}, ${b}`, pred: d => d.y === +a && exLabel(d, field) === b };
+    case 'year': return { id: `year|${a}`, title: `Every incident in ${a}`, pred: d => d.y === +a };
+    case 'cell': return { id: `cell|${a}|${b}`, title: `Victims' religion: ${a}; mode of attack: ${b}`, pred: d => d.rel === a && d.modeB === b };
+    case 'rel':  return { id: `rel|${a}`, title: `Victims' religion: ${a}`, pred: d => d.rel === a };
+    case 'occ':  return { id: `occ|${a}`, title: `Occasion: ${a}`, pred: d => (d.occB || 'Not recorded') === a };
+    default:     return { id: 'all', title: 'Every incident in this period', pred: () => true };
+  }
+}
+const exAttr = (...a) => encodeURIComponent(JSON.stringify(a));
 
 function exColours(keys) {
   const pal = EX_PALETTE[currentTheme()], neutral = EX_NEUTRAL[currentTheme()];
@@ -1070,48 +1130,99 @@ function exColours(keys) {
   return m;
 }
 
-function renderExplore(data) {
+(function exInit() {
+  const from = document.getElementById('exFrom'), to = document.getElementById('exTo');
+  const opts = d3.range(EX_YEARS[0], EX_YEARS[1] + 1).map(y => `<option value="${y}">${y}</option>`).join('');
+  from.innerHTML = opts; to.innerHTML = opts; from.value = exFrom; to.value = exTo;
+  const changed = () => {
+    exFrom = +from.value; exTo = +to.value;
+    if (exFrom > exTo) { if (document.activeElement === from) { exTo = exFrom; to.value = exTo; } else { exFrom = exTo; from.value = exFrom; } }
+    exSel = null; renderExplore();
+  };
+  from.addEventListener('change', changed); to.addEventListener('change', changed);
+  document.getElementById('exWhole').addEventListener('click', () => {
+    exFrom = EX_YEARS[0]; exTo = EX_YEARS[1]; from.value = exFrom; to.value = exTo; exSel = null; renderExplore();
+  });
+  document.getElementById('exShowAll').addEventListener('click', () => { exSel = exMakeSel('all'); renderExplore(true); });
+  document.getElementById('exUseFilters').addEventListener('change', e => { exUseFilters = e.target.checked; exSel = null; renderExplore(); });
+
+  document.getElementById('explore-body').addEventListener('click', e => {
+    const split = e.target.closest('#exSplitToggle button');
+    if (split) { exSplit = split.dataset.split; if (exSel && exSel.id.startsWith('seg|')) exSel = null; renderExplore(); return; }
+    if (e.target.closest('#exClear')) { exSel = null; renderExplore(); return; }
+    if (e.target.closest('#exCsv')) { exDownloadSelection(); return; }
+    const row = e.target.closest('tr[data-i]');
+    if (row) { openDetail(exRows[+row.dataset.i]); return; }
+    const el = e.target.closest('[data-sel]');
+    if (el) {
+      const [type, a, b] = JSON.parse(decodeURIComponent(el.dataset.sel));
+      const next = exMakeSel(type, a, b);
+      exSel = (exSel && exSel.id === next.id) ? null : next;
+      renderExplore(!!exSel);
+    }
+  });
+})();
+
+function exDownloadSelection() {
+  if (!exRows.length) return;
+  const esc2 = v => { const t = String(v == null ? '' : v); return /[",;\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const rows = [EXPORT_FIELDS.map(f => f[1])].concat(exRows.map(r => EXPORT_FIELDS.map(f => r[f[0]])));
+  const csv = '﻿' + rows.map(r => r.map(esc2).join(';')).join('\r\n');
+  saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `plorabunt_selection_${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+function renderExplore() {
   if (viewMode !== 'explore') return;
+  const scrollToDrill = arguments[0] === true;
+  const data = exBase();
+  const total = window.PLORABUNT_DATA.length;
   const val = items => metric === 'victims' ? d3.sum(items, i => i.vicN) : items.length;
   const unit = metric === 'victims' ? 'victims killed (approx.)' : 'incidents';
   const body = document.getElementById('explore-body');
-  document.getElementById('explore-meta').textContent =
-    `${fmtN(data.length)} incident${data.length === 1 ? '' : 's'} under the current filters. Charts show ${unit}; change the filters on the left, or the switch above, and they follow.`;
-  if (!data.length) { body.innerHTML = '<div id="panel-empty" style="grid-column:1/-1">No incidents match the current filters.</div>'; return; }
+  const whole = exFrom === EX_YEARS[0] && exTo === EX_YEARS[1] && !exUseFilters;
+  document.getElementById('explore-meta').textContent = whole
+    ? `The whole dataset: ${fmtN(total)} incidents, ${EX_YEARS[0]} to ${EX_YEARS[1]}. Click any bar, cell or line to open the incidents behind it.`
+    : `${fmtN(data.length)} of ${fmtN(total)} incidents, ${exFrom} to ${exTo}${exUseFilters ? ', with the filters on the left' : ''}. Click any bar, cell or line to open the incidents behind it.`;
+  const showAll = document.getElementById('exShowAll');
+  showAll.textContent = `Show every incident in this period (${fmtN(data.length)})`;
+  if (!data.length) { body.innerHTML = '<div id="panel-empty" style="grid-column:1/-1">No incidents in this period.</div>'; return; }
+  const isSel = id => exSel && exSel.id === id;
 
   /* ---- 1. over time ---- */
   const field = exSplit;
-  const labelOf = d => (field === 'occB' ? (d.occB || 'Not recorded') : (d[field] || 'Unknown'));
-  let keys = Array.from(new Set(data.map(labelOf)));
+  let keys = Array.from(new Set(data.map(d => exLabel(d, field))));
   if (field === 'occB') keys = OCC_ORDER.filter(k => keys.includes(k));
   else if (field === 'modeB') keys = MODES.filter(k => keys.includes(k));
-  else keys.sort((a,b) => val(data.filter(d=>labelOf(d)===b)) - val(data.filter(d=>labelOf(d)===a)));
+  else keys.sort((a,b) => val(data.filter(d=>exLabel(d,field)===b)) - val(data.filter(d=>exLabel(d,field)===a)));
   const col = exColours(keys);
-  const y0 = d3.min(data, d => d.y), y1 = d3.max(data, d => d.y);
+  const y0 = Math.max(exFrom, d3.min(data, d => d.y)), y1 = Math.min(exTo, d3.max(data, d => d.y));
   const years = d3.range(y0, y1 + 1);
   const rows = years.map(y => { const o = { y }; keys.forEach(k => o[k] = 0);
-    data.filter(d => d.y === y).forEach(d => { o[labelOf(d)] += (metric === 'victims' ? d.vicN : 1); }); return o; });
+    data.filter(d => d.y === y).forEach(d => { o[exLabel(d, field)] += (metric === 'victims' ? d.vicN : 1); }); return o; });
   const stack = d3.stack().keys(keys)(rows);
   const W = 900, H = 290, L = 44, Bm = 24, T = 8;
   const x = d3.scaleBand().domain(years).range([L, W]).padding(0.12);
+  const step = x.step();
   const ymax = d3.max(stack[stack.length - 1], d => d[1]) || 1;
   const y = d3.scaleLinear().domain([0, ymax]).nice().range([H - Bm, T]);
   const grid = y.ticks(4).map(t => `<line class="grid" x1="${L}" x2="${W}" y1="${y(t)}" y2="${y(t)}"/><text x="${L-6}" y="${y(t)+3}" text-anchor="end">${fmtN(t)}</text>`).join('');
+  const cols = years.map(v => `<rect class="ycol${isSel('year|'+v)?' ex-sel':''}" x="${(x(v)-(step-x.bandwidth())/2).toFixed(1)}" y="${T}" width="${step.toFixed(1)}" height="${H-Bm-T}" data-sel="${exAttr('year', v)}"><title>${v}: show every incident</title></rect>`).join('');
   const bars = stack.map(layer => layer.map(seg => {
     const h = y(seg[0]) - y(seg[1]); if (h <= 0) return '';
-    return `<rect x="${x(seg.data.y).toFixed(1)}" y="${y(seg[1]).toFixed(1)}" width="${x.bandwidth().toFixed(1)}" height="${h.toFixed(1)}" fill="${col[layer.key]}"><title>${seg.data.y}, ${esc(layer.key)}: ${fmtN(seg[1]-seg[0])}</title></rect>`;
+    const id = `seg|${field}|${seg.data.y}|${layer.key}`;
+    return `<rect class="${isSel(id)?'ex-sel':''}" data-sel="${exAttr('seg', seg.data.y, layer.key)}" x="${x(seg.data.y).toFixed(1)}" y="${y(seg[1]).toFixed(1)}" width="${x.bandwidth().toFixed(1)}" height="${h.toFixed(1)}" fill="${col[layer.key]}"><title>${seg.data.y}, ${esc(layer.key)}: ${fmtN(seg[1]-seg[0])}. Click to list these incidents.</title></rect>`;
   }).join('')).join('');
   const ticks = years.filter(v => v % 5 === 0).map(v => `<text x="${x(v)+x.bandwidth()/2}" y="${H-7}" text-anchor="middle">${v}</text>`).join('');
   const legend = keys.map(k => `<span class="ex-lg"><i style="background:${col[k]}"></i>${esc(k)}</span>`).join('');
   const card1 = `<div class="ex-card wide"><h3>Over time</h3>
-    <div class="sub">${fmtN(d3.sum(data, d => metric==='victims' ? d.vicN : 1))} ${unit}, ${y0} to ${y1}, split by the variable you choose. Hover a bar for its figures.</div>
+    <div class="sub">${fmtN(d3.sum(data, d => metric==='victims' ? d.vicN : 1))} ${unit}, ${y0} to ${y1}, split by the variable you choose. Click a coloured block for that year and group, or the space above a bar for the whole year.</div>
     <div class="ex-split">Split by
       <div class="segmented" id="exSplitToggle">
         <button data-split="modeB" class="${field==='modeB'?'active':''}">Mode of attack</button>
         <button data-split="rel" class="${field==='rel'?'active':''}">Victims' religion</button>
         <button data-split="occB" class="${field==='occB'?'active':''}">Occasion</button>
       </div></div>
-    <svg class="ex" viewBox="0 0 ${W} ${H}" role="img" aria-label="Stacked bar chart of ${unit} per year">${grid}${bars}${ticks}</svg>
+    <svg class="ex" viewBox="0 0 ${W} ${H}" role="img" aria-label="Stacked bar chart of ${unit} per year">${grid}${cols}${bars}${ticks}</svg>
     <div>${legend}</div>
     <div class="note">Read recent years with care: the record is still being completed, so years after about 2020 may hold fewer entries because of the stage of collection and of reporting, not because fewer attacks happened.</div></div>`;
 
@@ -1120,29 +1231,48 @@ function renderExplore(data) {
   const cell = (r, m) => val(data.filter(d => d.rel === r && d.modeB === m));
   const cmax = d3.max(relKeys.flatMap(r => MODES.map(m => cell(r, m)))) || 1;
   const dark = currentTheme() === 'dark', rgb = dark ? '196,84,94' : '161,41,51';
-  const heatRows = relKeys.map(r => `<tr><th scope="row">${esc(r)}</th>` + MODES.map(m => {
+  const heatRows = relKeys.map(r => `<tr><th scope="row"><button type="button" class="ex-rowlink${isSel('rel|'+r)?' ex-sel':''}" data-sel="${exAttr('rel', r)}" title="List every incident for ${esc(r)}">${esc(r)}</button></th>` + MODES.map(m => {
     const v = cell(r, m), a = v ? 0.14 + 0.86 * Math.pow(v / cmax, 0.6) : 0;
-    return `<td style="background:rgba(${rgb},${a.toFixed(2)});color:${a > 0.55 ? '#fff' : 'var(--ink)'}" title="${esc(r)}, ${esc(m)}: ${fmtN(v)}">${v ? fmtN(v) : '·'}</td>`;
+    return `<td>${v ? `<button type="button" class="ex-cell${isSel('cell|'+r+'|'+m)?' ex-sel':''}" data-sel="${exAttr('cell', r, m)}" style="background:rgba(${rgb},${a.toFixed(2)});color:${a > 0.55 ? '#fff' : 'var(--ink)'}" title="${esc(r)}, ${esc(m)}: ${fmtN(v)}. Click to list these incidents.">${fmtN(v)}</button>` : '<span style="color:var(--ink-dim)">·</span>'}</td>`;
   }).join('') + '</tr>').join('');
   const card2 = `<div class="ex-card"><h3>Victims' religion by mode of attack</h3>
-    <div class="sub">Number of ${unit}. Darker means more.</div>
+    <div class="sub">Number of ${unit}. Darker means more. Click a number, or a religion, to list the incidents.</div>
     <table class="ex-heat"><thead><tr><th></th>${MODES.map(m => `<th class="c">${esc(m).replace('/', '/<br>')}</th>`).join('')}</tr></thead><tbody>${heatRows}</tbody></table></div>`;
 
   /* ---- 3. occasion ---- */
   const occVals = OCC_ORDER.map(k => [k, val(data.filter(d => (d.occB || 'Not recorded') === k))]);
   const omax = d3.max(occVals, d => d[1]) || 1;
   const notRec = data.filter(d => (d.occB || 'Not recorded') === 'Not recorded').length;
-  const bars3 = occVals.map(([k, v]) => `<div class="ex-bar"><span class="lab">${esc(k)}</span>
-    <div class="trk"><div class="fil ${k==='Not recorded'?'muted':''}" style="width:${(v/omax*100).toFixed(1)}%"></div></div><span class="val">${fmtN(v)}</span></div>`).join('');
+  const bars3 = occVals.map(([k, v]) => `<button type="button" class="ex-bar${isSel('occ|'+k)?' ex-sel':''}" data-sel="${exAttr('occ', k)}"><span class="lab">${esc(k)}</span>
+    <span class="trk"><span class="fil ${k==='Not recorded'?'muted':''}" style="display:block;width:${(v/omax*100).toFixed(1)}%"></span></span><span class="val">${fmtN(v)}</span></button>`).join('');
   const card3 = `<div class="ex-card"><h3>Ritual context: the occasion</h3>
-    <div class="sub">What the worshippers were doing when the attack happened, grouped from the occasion recorded for each incident.</div>
+    <div class="sub">What the worshippers were doing when the attack happened, grouped from the occasion recorded for each incident. Click a line to list the incidents.</div>
     ${bars3}
-    <div class="note">${fmtN(notRec)} of ${fmtN(data.length)} incidents under these filters do not state an occasion. They are shown on their own line, not guessed. The groups are made from the recorded wording by fixed rules, which are public in <code>normalisation.json</code>.</div></div>`;
+    <div class="note">${fmtN(notRec)} of ${fmtN(data.length)} incidents in this period do not state an occasion. They are shown on their own line, not guessed. The groups are made from the recorded wording by fixed rules, which are public in <code>normalisation.json</code>.</div></div>`;
 
-  body.innerHTML = card1 + card2 + card3;
-  body.querySelectorAll('#exSplitToggle button').forEach(b => b.addEventListener('click', () => {
-    exSplit = b.dataset.split; renderExplore(filteredData());
-  }));
+  /* ---- 4. the incidents behind a selection ---- */
+  let drill;
+  if (!exSel) {
+    exRows = [];
+    drill = `<div class="ex-card wide" id="exDrill"><h3>Incidents</h3>
+      <div class="sub">Click a bar, a number or a line above to see the incidents behind it, or use "Show every incident in this period" at the top. Click an incident to open its record.</div></div>`;
+  } else {
+    exRows = data.filter(exSel.pred).slice().sort((a, b) => String(b.d).localeCompare(String(a.d)));
+    const killed = d3.sum(exRows, r => r.vicN);
+    drill = `<div class="ex-card wide" id="exDrill"><div class="ex-drill-head">
+        <h3 style="margin:0">${esc(exSel.title)}</h3>
+        <button type="button" class="ex-btn" id="exClear">Clear selection</button>
+        <button type="button" class="ex-btn" id="exCsv">Download these incidents (CSV)</button></div>
+      <div class="sub">${fmtN(exRows.length)} incident${exRows.length===1?'':'s'}, about ${fmtN(killed)} victims killed. Click a row to open the record.</div>
+      <div class="ex-scroll"><table class="ex-table"><thead><tr><th>Date</th><th>Country</th><th>City</th><th>Event</th><th>Occasion</th><th>Religion</th><th>Mode</th><th class="num">Killed</th></tr></thead><tbody>
+      ${exRows.map((r, i) => `<tr data-i="${i}"><td>${esc(fmtDate(r.d))}</td><td>${esc(r.country||'—')}</td><td>${esc(r.city||'—')}</td><td class="ev">${esc(r.ev||'Untitled incident')}</td><td>${isKnown(r.occ) ? esc(r.occ) : '—'}</td><td>${esc(r.relRaw||'Unknown')}</td><td>${esc(r.mode||'Unknown')}</td><td class="num">${esc(r.vic||'—')}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+  }
+
+  const keepScroll = body.scrollTop;
+  body.innerHTML = card1 + card2 + card3 + drill;
+  if (scrollToDrill && exSel) document.getElementById('exDrill').scrollIntoView({ block: 'start' });
+  else body.scrollTop = keepScroll;
 }
 
 /* ---------------- Globe view ----------------
@@ -1390,7 +1520,7 @@ function render() {
   drawLegend(maxCount);
   drawTop10(dotData);
   renderListView(data);
-  renderExplore(data);
+  renderExplore();
   if (mapLike() && isSearchActive()) {
     renderSearchPanel();
   } else if (mapLike() && selectedCountry) {
@@ -1537,20 +1667,24 @@ function drawLegend(maxCount) {
 
   const [cFew, cMany] = dotColourRange();
   const colourKey = metric === 'victims' ? '' : `
-    <div class="title" style="margin-top:12px;">Colour: victims killed</div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <span>Few</span>
-      <div style="width:70px;height:8px;border-radius:2px;background:linear-gradient(90deg,${cFew},${cMany});"></div>
-      <span>Many</span>
+    <div class="lg-colour">
+      <div class="title">Colour: victims killed</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span>Few</span>
+        <div style="width:70px;height:8px;border-radius:2px;background:linear-gradient(90deg,${cFew},${cMany});"></div>
+        <span>Many</span>
+      </div>
     </div>`;
 
   legend.innerHTML = `<div class="title">${metric==='victims' ? 'Victims killed per country (approx.)' : 'Incidents per country'}</div>
-    <svg width="${svgW}" height="${svgH}">
-      ${items.map(it => `
-        <circle cx="${cx}" cy="${base - it.r}" r="${it.r}"></circle>
-        <line x1="${cx}" y1="${it.top}" x2="${labelX - 4}" y2="${it.ly}"></line>
-        <text x="${labelX}" y="${it.ly + 3.5}">${fmtN(it.s)}</text>`).join('')}
-    </svg>${colourKey}`;
+    <div class="lg-row">
+      <svg width="${svgW}" height="${svgH}">
+        ${items.map(it => `
+          <circle cx="${cx}" cy="${base - it.r}" r="${it.r}"></circle>
+          <line x1="${cx}" y1="${it.top}" x2="${labelX - 4}" y2="${it.ly}"></line>
+          <text x="${labelX}" y="${it.ly + 3.5}">${fmtN(it.s)}</text>`).join('')}
+      </svg>${colourKey}
+    </div>`;
 }
 
 const addOverlay = document.getElementById('addOverlay');
