@@ -1,9 +1,11 @@
 {
-  "_comment": "Shared normalisation rules. Read by tools/update_data.py and by the curator panel in index.html. Edit here only.",
+  "_comment": "Shared normalisation rules. Read by tools/update_data.py and by the curator panel in index.html. Edit here only. occasionRules: first rule that matches the PARTICULAR OCCASION text wins (case-insensitive regular expressions); empty, 'Unknown', 'No', 'None' or 'N/A' gives 'Not recorded', no match gives 'Other'.",
   "columns": {
     "DATE": 0,
+    "PARTICULAR OCCASION": 1,
     "EVENT": 2,
     "PLACE-BASED WORSHIP": 3,
+    "PLACE OF WORSHIP": 4,
     "CITY": 5,
     "COUNTRY": 6,
     "MODE": 7,
@@ -100,5 +102,118 @@
       ]
     }
   ],
-  "duplicateCutoff": 0.82
+  "duplicateCutoff": 0.82,
+  "occasionRules": [
+    {
+      "label": "Festival or holy day",
+      "patterns": [
+        "\\beid\\b",
+        "\\beaster\\b",
+        "\\bchristmas\\b",
+        "\\bdiwali\\b",
+        "\\bfestival\\b",
+        "\\bnavratri\\b",
+        "\\bdussehra\\b",
+        "\\bvaisakhi\\b",
+        "\\bbaisakhi\\b",
+        "\\bpassover\\b",
+        "\\byom\\b",
+        "\\bashura\\b",
+        "\\bmuharram\\b",
+        "\\bnowruz\\b",
+        "\\bholiday\\b",
+        "\\bfeast\\b",
+        "\\bpilgrim",
+        "\\bholy\\b",
+        "\\bshemini\\b",
+        "\\bsimchat\\b",
+        "\\bsukkot\\b",
+        "\\bpurim\\b",
+        "\\bhanukkah\\b",
+        "\\brosh hashan",
+        "\\bpentecost\\b",
+        "\\bpalm sunday\\b",
+        "\\bgood friday\\b",
+        "\\bepiphany\\b",
+        "\\bmawlid\\b",
+        "\\blaylat\\b",
+        "\\barbaeen\\b",
+        "\\bholi\\b",
+        "\\biftar\\b"
+      ]
+    },
+    {
+      "label": "Friday prayer",
+      "patterns": [
+        "\\bfriday\\b",
+        "\\bjum[uo']?a[h]?\\b"
+      ]
+    },
+    {
+      "label": "Sabbath / Shabbat",
+      "patterns": [
+        "\\bsabbath\\b",
+        "\\bshabbat\\b",
+        "\\bshabbos\\b",
+        "\\bsaturday\\b"
+      ]
+    },
+    {
+      "label": "Funeral or procession",
+      "patterns": [
+        "\\bfuneral",
+        "\\bprocession",
+        "\\bburial",
+        "\\bmemorial"
+      ]
+    },
+    {
+      "label": "Sunday service / Mass",
+      "patterns": [
+        "\\bsunday\\b",
+        "\\bmass\\b",
+        "\\bliturgy",
+        "\\bservice"
+      ]
+    },
+    {
+      "label": "Prayer, worship or ceremony",
+      "patterns": [
+        "\\bpray",
+        "\\bworship",
+        "\\btaraweeh",
+        "\\btarawih",
+        "\\bfajr\\b",
+        "\\bdhuhr\\b",
+        "\\bzuhr\\b",
+        "\\basr\\b",
+        "\\bmaghrib\\b",
+        "\\bisha\\b",
+        "\\bnamaz\\b",
+        "\\bpuja\\b",
+        "\\bkirtan\\b",
+        "\\bmeditat",
+        "\\bevening\\b",
+        "\\bmorning\\b",
+        "\\bmeeting\\b",
+        "\\bceremony\\b",
+        "cerimon",
+        "ceremon",
+        "\\bobservance",
+        "\\bvigil",
+        "\\boffering",
+        "\\bprasad\\b",
+        "\\bp[uū]j[aā]\\b",
+        "\\bgathering",
+        "\\bcongregation",
+        "\\bdevotion",
+        "\\bmissa\\b",
+        "\\bcommunion",
+        "\\bbaptism",
+        "\\bwedding",
+        "\\bretreat",
+        "\\bsermon"
+      ]
+    }
+  ]
 }
