@@ -145,6 +145,42 @@
   #zoomControls button:hover{color:var(--ink);background:var(--tint);}
   #zoomControls button#zoomReset{font-size:12px;}
 
+  /* the size legend explains the map and the globe only */
+  main[data-view="list"] #legendFloat, main[data-view="explore"] #legendFloat{display:none;}
+
+  /* Explore view */
+  #explore-wrap{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden;}
+  #explore-wrap.open{display:flex;}
+  #explore-head{padding:68px 32px 16px;border-bottom:1px solid var(--line);flex-shrink:0;}
+  #explore-head h2{font-family:'Noto Serif',Georgia,serif;font-size:24px;margin:0 0 4px;}
+  #explore-head .meta{font-size:12px;color:var(--ink-dim);line-height:1.5;}
+  #explore-body{flex:1;overflow-y:auto;padding:20px 32px 40px;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-content:start;}
+  .ex-card{border:1px solid var(--line);border-radius:6px;padding:16px 18px;background:var(--bg2);min-width:0;}
+  .ex-card.wide{grid-column:1 / 3;}
+  @media (max-width:1000px){#explore-body{grid-template-columns:1fr;padding:16px;}.ex-card.wide{grid-column:auto;}}
+  .ex-card h3{font-family:'Noto Serif',Georgia,serif;font-size:17px;margin:0 0 3px;font-weight:600;}
+  .ex-card .sub{font-size:11.5px;color:var(--ink-dim);line-height:1.5;margin-bottom:12px;}
+  .ex-card .note{font-size:11px;color:var(--ink-dim);line-height:1.5;margin-top:10px;}
+  .ex-split{display:flex;gap:10px;align-items:center;font-size:11.5px;color:var(--ink-dim);margin:0 0 10px;flex-wrap:wrap;}
+  .ex-lg{font-size:11px;color:var(--ink-dim);margin:8px 14px 0 0;display:inline-block;}
+  .ex-lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
+  svg.ex{width:100%;height:auto;display:block;}
+  svg.ex text{fill:var(--ink-dim);font-size:10px;}
+  svg.ex line.grid{stroke:var(--line);stroke-width:1;}
+  table.ex-heat{border-collapse:separate;border-spacing:3px;width:100%;font-size:12px;}
+  table.ex-heat th{text-align:left;font-weight:500;color:var(--ink-dim);font-size:11.5px;}
+  table.ex-heat th.c{text-align:center;font-size:10.5px;line-height:1.25;}
+  table.ex-heat td{text-align:center;padding:9px 4px;border-radius:3px;font-weight:600;}
+  .ex-bar{display:flex;align-items:center;gap:10px;font-size:12.5px;margin:7px 0;}
+  .ex-bar .lab{width:170px;flex-shrink:0;color:var(--ink);}
+  .ex-bar .trk{flex:1;background:var(--track);height:14px;border-radius:2px;}
+  .ex-bar .fil{height:14px;background:var(--red);border-radius:2px;}
+  .ex-bar .fil.muted{background:var(--land-stroke);}
+  .ex-bar .val{width:52px;text-align:right;font-weight:600;}
+  .detail-ritual{background:var(--tint);border-left:3px solid var(--red);padding:10px 14px;border-radius:2px;font-size:13.5px;line-height:1.55;}
+  .detail-ritual .k{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--red);margin-right:6px;}
+  .detail-ritual .h{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--red);margin-bottom:4px;display:block;}
+
   /* Globe view */
   #globe-wrap{display:none;flex:1;position:relative;overflow:hidden;min-height:0;}
   #globe-wrap.open{display:block;}
@@ -170,7 +206,7 @@
   #pagefooter{padding:8px 28px;border-top:1px solid var(--line);font-size:9.5px;color:var(--ink-dim);flex-shrink:0;line-height:1.4;}
 
   main{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0;position:relative;}
-  main > #map-wrap, main > #globe-wrap, main > #listView{flex:1;}
+  main > #map-wrap, main > #globe-wrap, main > #listView, main > #explore-wrap{flex:1;}
   #map-wrap{flex:1;position:relative;overflow:hidden;min-height:0;}
   svg#map{width:100%;height:100%;display:block;cursor:grab;}
   svg#map:active{cursor:grabbing;}
@@ -296,6 +332,35 @@
   .detail-item .v{font-size:14px;line-height:1.4;}
   .detail-full{border-top:1px solid var(--line);padding-top:16px;}
   .detail-full a{font-size:13px;}
+
+  /* ---- Sidebar, decluttered: one search box, one filter group, legend moved onto the map ---- */
+  #sidebar{width:272px;padding:22px 20px 14px;gap:18px;}
+  .inst-logo{border-bottom:none;padding-bottom:0;}
+  .inst-logo img{width:150px;}
+  .brand .kicker{margin-bottom:6px;}
+  .brand h1{font-size:32px;}
+  .stats{display:flex;align-items:baseline;gap:7px;border-top:none;padding:0;margin-top:-6px;font-size:12px;color:var(--ink-dim);}
+  .stats b{font-family:'Noto Serif',Georgia,serif;font-weight:700;font-size:17px;color:var(--red);}
+  .stats i{font-style:normal;opacity:.6;}
+  #showingLine{margin-top:-12px;padding:0;}
+  .searchbox{position:relative;}
+  .searchbox #searchInput{padding:9px 30px 9px 11px;font-size:12.5px;}
+  .searchbox #searchClear{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:none;background:transparent;font-size:18px;line-height:1;padding:4px 8px;color:var(--ink-dim);}
+  .searchbox #searchInput:placeholder-shown + #searchClear{display:none;}
+  .side-group{display:flex;flex-direction:column;gap:12px;padding-top:16px;border-top:1px solid var(--line);}
+  .side-head{display:flex;align-items:baseline;justify-content:space-between;}
+  .link-btn{border:none;background:none;color:var(--red);font-size:11px;cursor:pointer;padding:0;}
+  .link-btn:hover{text-decoration:underline;}
+  .field-block{display:flex;flex-direction:column;gap:5px;}
+  .field-block .ctrl-label{font-size:10.5px;text-transform:none;letter-spacing:0;color:var(--ink-dim);}
+  .sidebar-footer{margin-top:auto;border-top:none;font-size:9.5px;opacity:.85;}
+  /* bottom right, below Australia, to the left of the zoom buttons */
+  #legendFloat{position:absolute;right:64px;bottom:50px;z-index:7;width:190px;pointer-events:none;transition:right .2s ease;}
+  main.panel-open #legendFloat{right:calc(max(280px,min(400px,42vw)) + 64px);}
+  main[data-view="globe"] #legendFloat{right:16px;}
+  main.panel-open[data-view="globe"] #legendFloat{right:calc(max(280px,min(400px,42vw)) + 16px);}
+  #legendFloat #legend{pointer-events:auto;padding:10px 12px;}
+  #resetBtn{display:none;}   /* the sidebar has "Reset all"; the button stays in the page because the script clicks it */
 </style>
 </head>
 <body>
@@ -309,52 +374,38 @@
       <span class="kicker">A global database, 1982–2026</span>
       <h1>Plorabunt</h1>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="n" id="statIncidents">–</div><div class="l">Incidents</div></div>
-      <div class="stat"><div class="n" id="statCountries">–</div><div class="l">Countries</div></div>
-      <div class="stat"><div class="n" style="font-size:15px;">1982–2026</div><div class="l">Span</div></div>
-    </div>
+    <div class="stats"><span><b id="statIncidents">–</b> incidents</span><i>·</i><span><b id="statCountries">–</b> countries</span></div>
     <div id="showingLine">Showing all incidents</div>
 
-    <div class="panel-section">
-      <div class="section-title">Search</div>
-      <div class="ctrl-block">
-        <input type="text" id="searchInput" placeholder="Event, city, group, motive…">
+    <div class="searchbox">
+      <input type="text" id="searchInput" placeholder="Search event, city, group…" aria-label="Search the records">
+      <button id="searchClear" type="button" aria-label="Clear search" title="Clear search">×</button>
+    </div>
+
+    <div class="side-group">
+      <div class="side-head"><span class="section-title">Filters</span><button type="button" class="link-btn" onclick="document.getElementById('resetBtn').click()">Reset all</button></div>
+      <div class="field-block"><div class="ctrl-label">Date range</div>
+        <div class="yr-row"><input type="date" id="dateFrom" class="date-input" min="1982-01-01" max="2026-12-31" value="1982-01-01"><span class="ctrl-label">to</span><input type="date" id="dateTo" class="date-input" min="1982-01-01" max="2026-12-31" value="2026-12-31"></div>
       </div>
-      <button id="searchClear">Clear search</button>
-    </div>
-
-    <div class="panel-section">
-      <div class="section-title">Date range</div>
-      <div class="yr-row"><input type="date" id="dateFrom" class="date-input" min="1982-01-01" max="2026-12-31" value="1982-01-01"><span class="ctrl-label">to</span><input type="date" id="dateTo" class="date-input" min="1982-01-01" max="2026-12-31" value="2026-12-31"></div>
-    </div>
-
-    <div class="panel-section">
-      <div class="section-title">Rankings</div>
-      <div class="dropdown" id="top10Dropdown">
-        <button type="button" id="top10Btn">Top 10 countries ▾</button>
-        <div class="dropdown-panel" id="top10Panel"><div id="top10List"></div></div>
-      </div>
-    </div>
-
-    <div class="panel-section">
-      <div class="section-title">Victims' religion</div>
-      <div class="dropdown" id="relDropdown">
+      <div class="field-block"><div class="ctrl-label">Victims' religion</div>
+        <div class="dropdown" id="relDropdown">
         <button type="button" id="relDropdownBtn">All religions ▾</button>
         <div class="dropdown-panel" id="relDropdownPanel"></div>
       </div>
-    </div>
-
-    <div class="panel-section">
-      <div class="section-title">Mode of attack</div>
-      <div class="dropdown" id="modeDropdown">
+      </div>
+      <div class="field-block"><div class="ctrl-label">Mode of attack</div>
+        <div class="dropdown" id="modeDropdown">
         <button type="button" id="modeDropdownBtn">All modes ▾</button>
         <div class="dropdown-panel" id="modeDropdownPanel"></div>
       </div>
+      </div>
     </div>
 
-    <div class="panel-section">
-      <div id="legend"></div>
+    <div class="side-group">
+      <div class="side-head"><span class="section-title">Ranking</span></div>
+      <div class="dropdown" id="top10Dropdown">
+        <button type="button" id="top10Btn">Top 10 countries ▾</button>
+        <div class="dropdown-panel" id="top10Panel"><div id="top10List"></div></div>
     </div>
 
     <div class="sidebar-footer">
@@ -363,12 +414,14 @@
   </nav>
 
   <main>
+    <div id="legendFloat"><div id="legend"></div></div>
     <div id="sourcesBanner"><strong>A note on sources:</strong> not every incident shows a visible source link — most were collected internally from outlets we can't redistribute publicly, but every entry, including those without a visible link, was documented from material we hold internally.</div>
     <div id="mapControlsLeft">
       <div class="segmented" id="sidebarViewToggle">
         <button data-view="map" class="active">Map</button>
         <button data-view="globe">Globe</button>
         <button data-view="list">List</button>
+        <button data-view="explore">Explore</button>
       </div>
       <div class="segmented" id="metricToggle">
         <button data-metric="incidents" class="active">Incidents</button>
@@ -402,6 +455,13 @@
         <button type="button" id="gReset" class="small" title="Back to the starting view" aria-label="Reset the globe">⟲</button>
       </div>
       <div id="globeHint">Drag to rotate · scroll to zoom · click a dot for its incidents</div>
+    </div>
+    <div id="explore-wrap">
+      <div id="explore-head">
+        <h2>Explore the record</h2>
+        <div class="meta" id="explore-meta"></div>
+      </div>
+      <div id="explore-body"></div>
     </div>
     <div id="listView">
       <div id="listView-head">
@@ -483,7 +543,9 @@
       that metric is selected; colour deepens with the number of victims killed. A large point
       therefore means "many entries in this record", which is not the same as "the most violence".
       The Globe view shows the same points, with the same filters and sizes, on a globe that can be
-      rotated and zoomed; the List view gives the same information as a table.</p>
+      rotated and zoomed; the List view gives the same information as a table. The Explore view
+      groups the same records, under the same filters, by year, mode of attack, victims' religion
+      and the occasion on which the attack took place.</p>
 
       <h3>Coverage and limits</h3>
       <p>The density of this record reflects the availability and the language of reporting as much
@@ -625,11 +687,12 @@
       <button id="detailClose">✕</button>
     </div>
     <div id="detailModal-body">
+      <div class="detail-ritual" id="detail-ritual" style="display:none;"></div>
       <div class="detail-grid">
         <div class="detail-item"><div class="k">Country</div><div class="v" id="detail-country"></div></div>
         <div class="detail-item"><div class="k">City</div><div class="v" id="detail-city"></div></div>
         <div class="detail-item"><div class="k">Victims' religion</div><div class="v" id="detail-rel"></div></div>
-        <div class="detail-item"><div class="k">Place of worship</div><div class="v" id="detail-worship"></div></div>
+        <div class="detail-item"><div class="k">Tradition</div><div class="v" id="detail-worship"></div></div>
         <div class="detail-item"><div class="k">Mode of attack</div><div class="v" id="detail-mode"></div></div>
         <div class="detail-item"><div class="k">Attribution / group</div><div class="v" id="detail-grp"></div></div>
         <div class="detail-item"><div class="k">Victims killed</div><div class="v" id="detail-vic"></div></div>
@@ -694,6 +757,9 @@ document.querySelectorAll('#sidebarViewToggle button').forEach(b => {
     b.classList.add('active');
     document.getElementById('map-wrap').style.display = viewMode === 'map' ? '' : 'none';
     document.getElementById('globe-wrap').classList.toggle('open', viewMode === 'globe');
+    document.getElementById('explore-wrap').classList.toggle('open', viewMode === 'explore');
+    document.querySelector('main').dataset.view = viewMode;
+    document.getElementById('legendFloat').style.display = viewMode === 'list' ? 'none' : '';
     document.getElementById('panel').classList.toggle('open', mapLike() && (selectedCountry || isSearchActive()));
     document.getElementById('listView').classList.toggle('open', viewMode === 'list');
     render();
@@ -980,6 +1046,105 @@ d3.json('vendor/countries-110m.json')
   render();
 });
 
+/* ---------------- Explore view ----------------
+   The same filtered records, grouped in a few ways so that anyone can ask their own question.
+   Every chart follows the filters on the left and the Incidents / Victims killed switch. */
+const isKnown = v => { const t = String(v == null ? '' : v).trim().toLowerCase(); return !!t && !t.startsWith('unknown') && !['no','none','n/a','—','-'].includes(t); };
+const OCC_ORDER = ['Prayer, worship or ceremony','Friday prayer','Sunday service / Mass','Festival or holy day','Funeral or procession','Sabbath / Shabbat','Other','Not recorded'];
+const EX_PALETTE = {
+  light: ['#A12933','#4a4a4a','#d08a91','#1C509A','#c9a227','#7a6f66','#9fb7d9','#b9b2ab'],
+  dark:  ['#c4545e','#cfc8c2','#8e4148','#6f9be0','#d4b24a','#a39a92','#3f5d8c','#5a5350']
+};
+const EX_NEUTRAL = { light: '#cfcac5', dark: '#4a4340' };
+let exSplit = 'modeB';
+
+document.querySelectorAll('#exSplitToggle button').forEach(b => b.addEventListener('click', () => {
+  exSplit = b.dataset.split;
+  renderExplore(filteredData());
+}));
+
+function exColours(keys) {
+  const pal = EX_PALETTE[currentTheme()], neutral = EX_NEUTRAL[currentTheme()];
+  let i = 0; const m = {};
+  keys.forEach(k => { m[k] = (k === 'Other' || k === 'Other/Unknown' || k === 'Not recorded') ? neutral : pal[i++ % pal.length]; });
+  return m;
+}
+
+function renderExplore(data) {
+  if (viewMode !== 'explore') return;
+  const val = items => metric === 'victims' ? d3.sum(items, i => i.vicN) : items.length;
+  const unit = metric === 'victims' ? 'victims killed (approx.)' : 'incidents';
+  const body = document.getElementById('explore-body');
+  document.getElementById('explore-meta').textContent =
+    `${fmtN(data.length)} incident${data.length === 1 ? '' : 's'} under the current filters. Charts show ${unit}; change the filters on the left, or the switch above, and they follow.`;
+  if (!data.length) { body.innerHTML = '<div id="panel-empty" style="grid-column:1/-1">No incidents match the current filters.</div>'; return; }
+
+  /* ---- 1. over time ---- */
+  const field = exSplit;
+  const labelOf = d => (field === 'occB' ? (d.occB || 'Not recorded') : (d[field] || 'Unknown'));
+  let keys = Array.from(new Set(data.map(labelOf)));
+  if (field === 'occB') keys = OCC_ORDER.filter(k => keys.includes(k));
+  else if (field === 'modeB') keys = MODES.filter(k => keys.includes(k));
+  else keys.sort((a,b) => val(data.filter(d=>labelOf(d)===b)) - val(data.filter(d=>labelOf(d)===a)));
+  const col = exColours(keys);
+  const y0 = d3.min(data, d => d.y), y1 = d3.max(data, d => d.y);
+  const years = d3.range(y0, y1 + 1);
+  const rows = years.map(y => { const o = { y }; keys.forEach(k => o[k] = 0);
+    data.filter(d => d.y === y).forEach(d => { o[labelOf(d)] += (metric === 'victims' ? d.vicN : 1); }); return o; });
+  const stack = d3.stack().keys(keys)(rows);
+  const W = 900, H = 290, L = 44, Bm = 24, T = 8;
+  const x = d3.scaleBand().domain(years).range([L, W]).padding(0.12);
+  const ymax = d3.max(stack[stack.length - 1], d => d[1]) || 1;
+  const y = d3.scaleLinear().domain([0, ymax]).nice().range([H - Bm, T]);
+  const grid = y.ticks(4).map(t => `<line class="grid" x1="${L}" x2="${W}" y1="${y(t)}" y2="${y(t)}"/><text x="${L-6}" y="${y(t)+3}" text-anchor="end">${fmtN(t)}</text>`).join('');
+  const bars = stack.map(layer => layer.map(seg => {
+    const h = y(seg[0]) - y(seg[1]); if (h <= 0) return '';
+    return `<rect x="${x(seg.data.y).toFixed(1)}" y="${y(seg[1]).toFixed(1)}" width="${x.bandwidth().toFixed(1)}" height="${h.toFixed(1)}" fill="${col[layer.key]}"><title>${seg.data.y}, ${esc(layer.key)}: ${fmtN(seg[1]-seg[0])}</title></rect>`;
+  }).join('')).join('');
+  const ticks = years.filter(v => v % 5 === 0).map(v => `<text x="${x(v)+x.bandwidth()/2}" y="${H-7}" text-anchor="middle">${v}</text>`).join('');
+  const legend = keys.map(k => `<span class="ex-lg"><i style="background:${col[k]}"></i>${esc(k)}</span>`).join('');
+  const card1 = `<div class="ex-card wide"><h3>Over time</h3>
+    <div class="sub">${fmtN(d3.sum(data, d => metric==='victims' ? d.vicN : 1))} ${unit}, ${y0} to ${y1}, split by the variable you choose. Hover a bar for its figures.</div>
+    <div class="ex-split">Split by
+      <div class="segmented" id="exSplitToggle">
+        <button data-split="modeB" class="${field==='modeB'?'active':''}">Mode of attack</button>
+        <button data-split="rel" class="${field==='rel'?'active':''}">Victims' religion</button>
+        <button data-split="occB" class="${field==='occB'?'active':''}">Occasion</button>
+      </div></div>
+    <svg class="ex" viewBox="0 0 ${W} ${H}" role="img" aria-label="Stacked bar chart of ${unit} per year">${grid}${bars}${ticks}</svg>
+    <div>${legend}</div>
+    <div class="note">Read recent years with care: the record is still being completed, so years after about 2020 may hold fewer entries because of the stage of collection and of reporting, not because fewer attacks happened.</div></div>`;
+
+  /* ---- 2. religion x mode ---- */
+  const relKeys = Array.from(new Set(data.map(d => d.rel))).sort((a,b) => val(data.filter(d=>d.rel===b)) - val(data.filter(d=>d.rel===a)));
+  const cell = (r, m) => val(data.filter(d => d.rel === r && d.modeB === m));
+  const cmax = d3.max(relKeys.flatMap(r => MODES.map(m => cell(r, m)))) || 1;
+  const dark = currentTheme() === 'dark', rgb = dark ? '196,84,94' : '161,41,51';
+  const heatRows = relKeys.map(r => `<tr><th scope="row">${esc(r)}</th>` + MODES.map(m => {
+    const v = cell(r, m), a = v ? 0.14 + 0.86 * Math.pow(v / cmax, 0.6) : 0;
+    return `<td style="background:rgba(${rgb},${a.toFixed(2)});color:${a > 0.55 ? '#fff' : 'var(--ink)'}" title="${esc(r)}, ${esc(m)}: ${fmtN(v)}">${v ? fmtN(v) : '·'}</td>`;
+  }).join('') + '</tr>').join('');
+  const card2 = `<div class="ex-card"><h3>Victims' religion by mode of attack</h3>
+    <div class="sub">Number of ${unit}. Darker means more.</div>
+    <table class="ex-heat"><thead><tr><th></th>${MODES.map(m => `<th class="c">${esc(m).replace('/', '/<br>')}</th>`).join('')}</tr></thead><tbody>${heatRows}</tbody></table></div>`;
+
+  /* ---- 3. occasion ---- */
+  const occVals = OCC_ORDER.map(k => [k, val(data.filter(d => (d.occB || 'Not recorded') === k))]);
+  const omax = d3.max(occVals, d => d[1]) || 1;
+  const notRec = data.filter(d => (d.occB || 'Not recorded') === 'Not recorded').length;
+  const bars3 = occVals.map(([k, v]) => `<div class="ex-bar"><span class="lab">${esc(k)}</span>
+    <div class="trk"><div class="fil ${k==='Not recorded'?'muted':''}" style="width:${(v/omax*100).toFixed(1)}%"></div></div><span class="val">${fmtN(v)}</span></div>`).join('');
+  const card3 = `<div class="ex-card"><h3>Ritual context: the occasion</h3>
+    <div class="sub">What the worshippers were doing when the attack happened, grouped from the occasion recorded for each incident.</div>
+    ${bars3}
+    <div class="note">${fmtN(notRec)} of ${fmtN(data.length)} incidents under these filters do not state an occasion. They are shown on their own line, not guessed. The groups are made from the recorded wording by fixed rules, which are public in <code>normalisation.json</code>.</div></div>`;
+
+  body.innerHTML = card1 + card2 + card3;
+  body.querySelectorAll('#exSplitToggle button').forEach(b => b.addEventListener('click', () => {
+    exSplit = b.dataset.split; renderExplore(filteredData());
+  }));
+}
+
 /* ---------------- Globe view ----------------
    The same dots, sizes, colours and filters as the map, on an orthographic globe.
    Drawn on a canvas. Drag to rotate, wheel or pinch to zoom, arrow keys and +/- work
@@ -1181,6 +1346,7 @@ function render() {
   document.getElementById('showingLine').innerHTML = data.length === total
     ? `Showing all <strong>${fmtN(total)}</strong> incidents`
     : `Showing <strong>${fmtN(data.length)}</strong> of ${fmtN(total)} incidents`;
+  document.getElementById('showingLine').style.display = data.length === total ? 'none' : '';
 
   const byCountry = d3.rollup(data, v => v, d => d.cc);
   const valueOf = items => metric === 'victims' ? d3.sum(items, i=>i.vicN) : items.length;
@@ -1224,6 +1390,7 @@ function render() {
   drawLegend(maxCount);
   drawTop10(dotData);
   renderListView(data);
+  renderExplore(data);
   if (mapLike() && isSearchActive()) {
     renderSearchPanel();
   } else if (mapLike() && selectedCountry) {
@@ -1282,6 +1449,7 @@ function incidentCard(it, showCountry) {
       <div class="date">${fmtDate(it.d)} · ${it.city ? it.city + ', ' : ''}${showCountry ? it.country : ''}</div>
       <h3>${it.ev || 'Untitled incident'}</h3>
       <div class="row2">
+        ${isKnown(it.occ) ? `<span class="k">Occasion:</span> ${esc(it.occ)}<br>` : ''}
         <span class="k">Religion:</span> ${it.relRaw || 'Unknown'}<br>
         <span class="k">Mode:</span> ${it.mode || 'Unknown'}<br>
         <span class="k">Victims killed:</span> ${it.vic || 'Unknown'} &nbsp; <span class="k">Injured:</span> ${it.inj || 'Unknown'}
@@ -1305,6 +1473,11 @@ function openDetail(it) {
   document.getElementById('detail-city').textContent = it.city || '—';
   document.getElementById('detail-rel').textContent = it.relRaw || 'Unknown';
   document.getElementById('detail-worship').textContent = it.worship || '—';
+  const ritual = document.getElementById('detail-ritual'), parts = [];
+  if (isKnown(it.occ)) parts.push(`<div><span class="k">Occasion</span>${esc(it.occ)}</div>`);
+  if (isKnown(it.place)) parts.push(`<div><span class="k">Place</span>${esc(it.place)}</div>`);
+  ritual.innerHTML = parts.length ? '<span class="h">Ritual context</span>' + parts.join('') : '';
+  ritual.style.display = parts.length ? '' : 'none';
   document.getElementById('detail-mode').textContent = it.mode || 'Unknown';
   document.getElementById('detail-grp').textContent = it.grp || 'Unknown';
   document.getElementById('detail-vic').textContent = it.vic || 'Unknown';
@@ -1499,7 +1672,8 @@ const EXPORT_FIELDS = [
   ['worship','place_of_worship'], ['mode','mode_as_recorded'],
   ['modeB','mode_grouped'], ['vic','victims_killed_as_reported'],
   ['vicN','victims_killed_numeric'], ['inj','injured_as_reported'],
-  ['grp','group_attribution'], ['src','source']
+  ['grp','group_attribution'], ['src','source'],
+  ['occ','occasion_as_recorded'], ['occB','occasion_grouped'], ['place','specific_place_of_worship']
 ];
 
 function exportRows() {
@@ -1636,6 +1810,15 @@ function bucketReligion(raw) {
   return hits.length === 1 ? hits[0] : 'Other/Unknown';
 }
 
+function bucketOccasion(raw) {
+  const t = (raw || '').trim();
+  if (!t || /^unknown/i.test(t) || ['no','none','n/a'].includes(t.toLowerCase())) return 'Not recorded';
+  for (const rule of (RULES.occasionRules || [])) {
+    if (rule.patterns.some(p => new RegExp(p, 'i').test(t))) return rule.label;
+  }
+  return 'Other';
+}
+
 function bucketMode(raw) {
   const m = (raw || '').trim().toLowerCase();
   if (!m) return 'Other';
@@ -1754,7 +1937,10 @@ function rowsToRecords(rows) {
       grp: clean(row[C["KILLERS' MILITANT GROUP"]]) || 'Unknown',
       src: firstUrl(row[C['SOURCES']]),
       modeB: bucketMode(modeRaw),
-      vicN: numericFloor(vicRaw)
+      vicN: numericFloor(vicRaw),
+      occ: clean(row[C['PARTICULAR OCCASION']]) || 'Unknown',
+      place: clean(row[C['PLACE OF WORSHIP']]) || 'Unknown',
+      occB: bucketOccasion(clean(row[C['PARTICULAR OCCASION']]))
     });
   }
   return { records, skipped, unknownCountries: [...unknownCountries] };
@@ -1789,7 +1975,7 @@ function buildReport(incoming) {
 /* ---------- writing data.js back to the repository ---------- */
 
 function serialiseRecord(r) {
-  const order = ['d','y','ev','city','country','cc','rel','relRaw','worship','mode','vic','inj','grp','src','modeB','vicN'];
+  const order = ['d','y','ev','city','country','cc','rel','relRaw','worship','mode','vic','inj','grp','src','modeB','vicN','occ','place','occB'];
   const o = {};
   order.forEach(k => { if (k in r) o[k] = r[k]; });
   Object.keys(r).forEach(k => { if (!(k in o)) o[k] = r[k]; });
@@ -1812,6 +1998,8 @@ function buildDataJs(records) {
              Hostage Taking, Other
      vic     casualties as reported, ranges and uncertainty preserved
      vicN    numeric floor of vic, used for sizing and totals
+     occ     occasion as recorded; occB: the group it falls into (see normalisation.json)
+     place   the specific place of worship, as recorded
 ------------------------------------------------------------------------ */
 window.PLORABUNT_DATA = [
 `;
