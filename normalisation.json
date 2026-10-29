@@ -1,5 +1,5 @@
 {
-  "_comment": "Shared normalisation rules. Read by tools/update_data.py and by the curator panel in index.html. Edit here only. occasionRules: first rule that matches the PARTICULAR OCCASION text wins (case-insensitive regular expressions); empty, 'Unknown', 'No', 'None' or 'N/A' gives 'Not recorded', no match gives 'Other'.",
+  "_comment": "Shared normalisation rules. Read by tools/update_data.py and by the curator panel in index.html. Edit here only. occasionRules: first rule that matches the PARTICULAR OCCASION text wins (case-insensitive regular expressions); empty, 'Unknown', 'No', 'None' or 'N/A' gives 'Not recorded', no match gives 'Other'. groupAliases, ideologyRules and motiveRules (perpetrator fields): first rule that matches wins (case-insensitive regular expressions); an empty or 'Unknown' value gives 'Not recorded'. No individual names are ever imported. weaponRules: each label lists the patterns that signal it; an incident that matches several labels is 'Multiple types'; the 'generic' explosive label is dropped when a more specific explosive label also matches. Categories only; no technical detail is held. groupTypeRules (perpetrator type): applied to the group name as recorded, first match wins; with no group recorded the type comes from the number of attackers. The type describes the kind of group, never an individual.",
   "columns": {
     "DATE": 0,
     "PARTICULAR OCCASION": 1,
@@ -13,7 +13,17 @@
     "N. VICTIMS": 10,
     "VICTIMS' RELIGION": 12,
     "KILLERS' MILITANT GROUP": 20,
-    "SOURCES": 31
+    "SOURCES": 31,
+    "No. KILLERS": 17,
+    "No. KILLERS SURVIVED": 18,
+    "CLAIM": 21,
+    "KILLERS' RELIGION": 22,
+    "KILLERS' IDEOLOGY": 25,
+    "MOTIVE": 26,
+    "N.KILLERS CONVICTED": 27,
+    "TRIAL": 28,
+    "SENTENCE": 29,
+    "WEAPONS": 8
   },
   "countryToMapName": {
     "Ancash, Peru": "Peru",
@@ -213,6 +223,515 @@
         "\\bwedding",
         "\\bretreat",
         "\\bsermon"
+      ]
+    }
+  ],
+  "groupAliases": [
+    {
+      "label": "Shining Path",
+      "patterns": [
+        "shining path",
+        "sendero"
+      ]
+    },
+    {
+      "label": "Boko Haram",
+      "patterns": [
+        "boko haram",
+        "jam[aā][ʿ']?at ahl as-sunnah"
+      ]
+    },
+    {
+      "label": "Islamic State (all branches)",
+      "patterns": [
+        "islamic state",
+        "\\bisil\\b",
+        "\\bisis\\b",
+        "\\bisi\\b",
+        "daesh",
+        "khorasan chapter",
+        "sanaa province",
+        "wilayat"
+      ]
+    },
+    {
+      "label": "Tehrik-i-Taliban Pakistan (TTP)",
+      "patterns": [
+        "tehrik",
+        "\\bttp\\b"
+      ]
+    },
+    {
+      "label": "Taliban (Afghanistan)",
+      "patterns": [
+        "^taliban",
+        "afghan taliban"
+      ]
+    },
+    {
+      "label": "People's Liberation Front (JVP)",
+      "patterns": [
+        "people'?s liberation front \\(j[pv][pv]\\)",
+        "\\bjvp\\b",
+        "\\bjpv\\b"
+      ]
+    },
+    {
+      "label": "al-Shabaab",
+      "patterns": [
+        "shab[aā]+b"
+      ]
+    },
+    {
+      "label": "Lashkar-e-Jhangvi",
+      "patterns": [
+        "lashkar-e-jhangvi"
+      ]
+    },
+    {
+      "label": "Jemaah Islamiyah",
+      "patterns": [
+        "jemaah islamiy"
+      ]
+    },
+    {
+      "label": "al-Qaeda (all branches)",
+      "patterns": [
+        "al-qa[ie]da",
+        "al qaeda"
+      ]
+    },
+    {
+      "label": "Liberation Tigers of Tamil Eelam (LTTE)",
+      "patterns": [
+        "\\bltte\\b",
+        "liberation tigers"
+      ]
+    },
+    {
+      "label": "Sikh extremists",
+      "patterns": [
+        "sikh extremist",
+        "khalist"
+      ]
+    },
+    {
+      "label": "Inkatha Freedom Party (IFP)",
+      "patterns": [
+        "inkh?atha"
+      ]
+    }
+  ],
+  "ideologyRules": [
+    {
+      "label": "Far-right, racist or hate-based",
+      "patterns": [
+        "racis",
+        "supremac",
+        "suprematis",
+        "neo-?nazi",
+        "far-?right",
+        "right-?wing",
+        "anti-?semit",
+        "anti-?muslim",
+        "anti-?shi",
+        "anti-?sunni",
+        "islamophob",
+        "anti-?christian",
+        "anti-?hindu",
+        "hatred"
+      ]
+    },
+    {
+      "label": "Marxist, socialist or left-wing",
+      "patterns": [
+        "marx",
+        "maoi",
+        "communis",
+        "leninis",
+        "naxal",
+        "socialis",
+        "left-?wing"
+      ]
+    },
+    {
+      "label": "Religious fundamentalist, extremist or jihadist",
+      "patterns": [
+        "fundamen",
+        "jihad",
+        "salaf",
+        "islamis",
+        "wahhab",
+        "takfir",
+        "deobandi",
+        "islamic state",
+        "extremis",
+        "estremism",
+        "fanatic",
+        "radical",
+        "pan-?islam"
+      ]
+    },
+    {
+      "label": "Nationalist, separatist or liberation",
+      "patterns": [
+        "national",
+        "separat",
+        "independ",
+        "ethno",
+        "khalistan",
+        "autonom",
+        "apartheid",
+        "liberation",
+        "pan-?africa",
+        "pro-"
+      ]
+    },
+    {
+      "label": "Militarist or paramilitary",
+      "patterns": [
+        "milit",
+        "authoritarian"
+      ]
+    },
+    {
+      "label": "Sectarian",
+      "patterns": [
+        "sectar"
+      ]
+    }
+  ],
+  "motiveRules": [
+    {
+      "label": "Sectarian conflict",
+      "patterns": [
+        "sectar",
+        "shi.?ite majority",
+        "sunni rise",
+        "against iraq's shi"
+      ]
+    },
+    {
+      "label": "Ethnic or communal conflict",
+      "patterns": [
+        "ethnic",
+        "communal",
+        "tribal",
+        "farmer",
+        "herder",
+        "fulani",
+        "racial",
+        "anti-balaka",
+        "s[eé]l[eé]ka"
+      ]
+    },
+    {
+      "label": "Religious or doctrinal",
+      "patterns": [
+        "religio",
+        "islamic state",
+        "caliphate",
+        "sharia",
+        "blasphem",
+        "apostas",
+        "infidel",
+        "heretic",
+        "convert",
+        "jihad",
+        "fundamentalis",
+        "pan-islam",
+        "christians",
+        "muslim world",
+        "muslim north",
+        "persecution"
+      ]
+    },
+    {
+      "label": "Political, separatist or anti-state",
+      "patterns": [
+        "politic",
+        "separat",
+        "secession",
+        "independ",
+        "indipend",
+        "nationalis",
+        "marxis",
+        "communis",
+        "government",
+        "insurg",
+        "apartheid",
+        "regime",
+        "election",
+        "homeland",
+        "autonomy",
+        "overthrow",
+        "peace",
+        "power struggle",
+        "versus",
+        "conflict between",
+        "ideology",
+        "iron "
+      ]
+    },
+    {
+      "label": "Revenge or retaliation",
+      "patterns": [
+        "reveng",
+        "retaliat",
+        "reprisal",
+        "response to",
+        "in response",
+        "avenge",
+        "after the hamas",
+        "uproar"
+      ]
+    },
+    {
+      "label": "Extremist violence, unspecified",
+      "patterns": [
+        "extremis",
+        "terroris",
+        "violence",
+        "militan"
+      ]
+    }
+  ],
+  "weaponRules": [
+    {
+      "label": "Firearms",
+      "patterns": [
+        "\\bguns?\\b",
+        "firearm",
+        "gunfire",
+        "pistol",
+        "rifle",
+        "handgun",
+        "automatic weapon",
+        "kalashnikov",
+        "ak-?47",
+        "machine ?gun",
+        "shotgun",
+        "revolver",
+        "shooting",
+        "bullet",
+        "caliber",
+        "calibre",
+        "aitomatic",
+        "ammunition",
+        "spraying"
+      ]
+    },
+    {
+      "label": "Suicide explosive (worn or carried)",
+      "patterns": [
+        "suicide",
+        "explosives?-laden (belt|vest)",
+        "explosive (belt|vest)",
+        "bodily"
+      ]
+    },
+    {
+      "label": "Vehicle-borne explosive",
+      "patterns": [
+        "car ?bomb",
+        "vehicle",
+        "truck bomb",
+        "vbied"
+      ]
+    },
+    {
+      "label": "Projectile (rocket, mortar, RPG)",
+      "patterns": [
+        "projectile",
+        "rocket",
+        "mortar",
+        "\\brpg\\b",
+        "missile",
+        "shell(ed|ing)?\\b"
+      ]
+    },
+    {
+      "label": "Explosive device (planted or thrown)",
+      "generic": true,
+      "patterns": [
+        "explosive",
+        "bomb",
+        "grenade",
+        "\\bied\\b",
+        "dynamite",
+        "landmine",
+        "land mine",
+        "detonat",
+        "blast"
+      ]
+    },
+    {
+      "label": "Knife or sharp object",
+      "patterns": [
+        "knife",
+        "knives",
+        "machete",
+        "blade",
+        "sharp",
+        "axe\\b",
+        "sword",
+        "dagger",
+        "stab"
+      ]
+    },
+    {
+      "label": "Arson or fire",
+      "patterns": [
+        "arson",
+        "\\bfire\\b",
+        "incendiar",
+        "petrol",
+        "molotov",
+        "burn"
+      ]
+    }
+  ],
+  "groupTypeRules": [
+    {
+      "label": "State or security forces",
+      "patterns": [
+        "\\bSAP\\b",
+        "south african (party|police)",
+        "police",
+        "armed forces",
+        "\\barmy\\b",
+        "security forces",
+        "\\bIDF\\b",
+        "israel defen[cs]e",
+        "government forces",
+        "state forces",
+        "soldiers",
+        "defen[cs]e force",
+        "\\bSADF\\b",
+        "security branch",
+        "death squad"
+      ]
+    },
+    {
+      "label": "Marxist or Maoist insurgency",
+      "patterns": [
+        "shining path",
+        "sendero",
+        "\\bJ[VP][PV]\\b",
+        "people'?s liberation front",
+        "communist",
+        "maoist",
+        "marxist",
+        "naxal",
+        "\\bFARC\\b",
+        "revolutionary",
+        "khmer rouge"
+      ]
+    },
+    {
+      "label": "Far-right or hate-based group",
+      "patterns": [
+        "nazi",
+        "supremac",
+        "ku klux",
+        "\\bklan\\b",
+        "far-?right",
+        "skinhead",
+        "anti-communist alliance",
+        "\\bACHA\\b",
+        "right-?wing"
+      ]
+    },
+    {
+      "label": "Separatist or nationalist movement",
+      "patterns": [
+        "\\bLTTE\\b",
+        "tamil",
+        "\\bPKK\\b",
+        "kurdistan",
+        "sikh",
+        "khalist",
+        "\\bIRA\\b",
+        "irish",
+        "separat",
+        "liberation",
+        "nationalist",
+        "independen",
+        "\\bETA\\b",
+        "loyalist",
+        "\\bUVF\\b",
+        "\\bUDA\\b",
+        "karen",
+        "national union",
+        "casamance",
+        "patriotic front",
+        "national front",
+        "resistance",
+        "\\bRPF\\b",
+        "contra"
+      ]
+    },
+    {
+      "label": "Jihadist or Islamist organisation",
+      "patterns": [
+        "islamic",
+        "islamist",
+        "muslim",
+        "jihad",
+        "boko haram",
+        "jam[aā][ʿ']?at",
+        "taliban",
+        "\\bTTP\\b",
+        "tehrik",
+        "qa[ie]da",
+        "shab[aā]+b",
+        "jemaah",
+        "lashkar",
+        "hamas",
+        "hezbollah",
+        "ansar",
+        "mujahid",
+        "salafi",
+        "sipah",
+        "\\bGIA\\b",
+        "\\bISIL?\\b",
+        "\\bISIS\\b",
+        "daesh",
+        "khorasan",
+        "sanaa province",
+        "al-nusra",
+        "nusrah",
+        "abu sayyaf",
+        "\\bMILF\\b",
+        "\\bASG\\b",
+        "jamaah",
+        "ansharut",
+        "daulah",
+        "gama.?at",
+        "jundallah",
+        "wahhab",
+        "nidal",
+        "arab fury"
+      ]
+    },
+    {
+      "label": "Ethnic, communal or local militia",
+      "patterns": [
+        "militia",
+        "anti-balaka",
+        "s[eé]l[eé]ka",
+        "fulani",
+        "herder",
+        "vigilante",
+        "tribal",
+        "ethnic",
+        "inkh?atha",
+        "\\bIFP\\b",
+        "\\bANC\\b",
+        "\\bUDF\\b",
+        "paramilitar",
+        "gang",
+        "mob"
       ]
     }
   ]
