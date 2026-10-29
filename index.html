@@ -212,6 +212,12 @@
   .ex-drill-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
   table.ex-table{width:100%;border-collapse:collapse;}
   table.ex-table a{color:var(--red);}
+  .info{position:relative;display:inline-block;margin-left:7px;vertical-align:middle;}
+  .info > button{border:1px solid var(--line);background:transparent;color:var(--ink-dim);width:18px;height:18px;border-radius:50%;font:600 11px/1 Georgia,serif;cursor:help;padding:0;}
+  .info > button:hover,.info > button:focus{border-color:var(--red);color:var(--red);outline:none;}
+  .info .tip{display:none;position:absolute;left:0;top:calc(100% + 8px);width:min(420px,80vw);background:var(--pop);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-family:"Noto Sans",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-weight:400;font-size:12px;line-height:1.55;letter-spacing:0;text-transform:none;color:var(--ink);z-index:20;box-shadow:0 8px 24px var(--shadow);}
+  .info:hover .tip,.info:focus-within .tip{display:block;}
+  .info .tip b{display:block;margin-top:8px;font-weight:600;color:var(--red);}.info .tip b:first-child{margin-top:0;}
   .cmp-row{display:flex;gap:12px;align-items:center;margin:9px 0;font-size:12.5px;}.cmp-row .lab{width:150px;flex-shrink:0;}.cmp-bars{flex:1;}
   .cmp-bars .b{display:flex;align-items:center;gap:8px;height:15px;margin:2px 0;}.cmp-bars i{display:block;height:13px;border-radius:2px;}.cmp-bars em{font-style:normal;color:var(--muted);font-size:11.5px;}
   .key{display:inline-flex;gap:6px;align-items:center;}.key i{width:12px;height:12px;border-radius:2px;display:inline-block;}
@@ -446,7 +452,42 @@
 .lockup .brand h1{font-size:34px;white-space:nowrap}
 .lockup .brand .kicker{margin:6px 0 0;font-size:9.5px}
 :root[data-theme="dark"] .lockup .brand .kicker{font-weight:700;color:#a03440}
-</style></head>
+</style><style>
+/* Phones and narrow windows: the filter panel folds behind a "Filters" button and the
+   country panel becomes a sheet at the bottom, so the map or globe keeps the full width. */
+#sideToggle{display:none}
+@media (max-width:760px){
+  #app{flex-direction:column;height:100vh;height:100dvh}
+  #sidebar{width:100%;flex:0 0 auto;border-right:none;border-bottom:1px solid var(--line);padding:10px 14px;gap:8px;flex-direction:row;flex-wrap:wrap;align-items:center;overflow:visible;max-height:none}
+  #sidebar.open{max-height:78vh;overflow-y:auto}
+  .lockup{flex:1 1 100%;gap:10px}
+  .lockup .inst-logo img{height:34px}
+  .lockup .brand h1{font-size:25px}
+  .lockup .brand .kicker{margin:2px 0 0;font-size:8.5px}
+  #sidebar .stats{flex:1 1 100%;margin:0}
+  #showingLine{display:none}
+  #sidebar .searchbox{flex:1 1 0;min-width:0}
+  #sideToggle{display:block;flex:0 0 auto;border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:12px;padding:9px 12px;border-radius:4px;cursor:pointer}
+  #sideToggle[aria-expanded="true"]{border-color:var(--red);color:var(--red)}
+  #sidebar .side-group,#sidebar .sidebar-footer{display:none;flex:1 1 100%}
+  #sidebar.open .side-group,#sidebar.open .sidebar-footer{display:block}
+  #mapControlsLeft{top:8px;left:8px;right:8px;max-width:none}
+  #mapControls,main.panel-open #mapControls{top:90px;left:8px;right:8px;max-width:none;justify-content:flex-start}
+  #explore-head{padding:134px 14px 14px}
+  #listView-head{padding:134px 14px 14px}
+  #globeHint{display:none}
+  main[data-view="explore"] #mapControls{top:90px}
+  #resetBtn,#aboutBtn,#curatorBtn,#themeBtn,#fullBtn{padding:6px 10px}
+  #legendFloat,main.panel-open #legendFloat,main[data-view="globe"] #legendFloat,main.panel-open[data-view="globe"] #legendFloat{left:8px;right:auto;bottom:calc(var(--banner-h,32px) + 54px);max-width:230px}
+  main[data-view="map"] #legendFloat{bottom:calc(var(--banner-h,32px) + 8px)}
+  main.panel-open #legendFloat{display:none}
+  aside#panel{top:auto;bottom:0;left:0;right:0;width:100%;height:0;border-left:none;border-top:1px solid var(--line);transition:height .2s ease}
+  aside#panel.open{width:100%;height:58%;box-shadow:0 -12px 30px var(--shadow)}
+  #sourcesBanner{padding:8px 14px}
+  #addModal{width:calc(100vw - 20px)}
+}
+</style>
+</head>
 <body>
 <div id="app">
   <nav id="sidebar">
@@ -465,6 +506,7 @@
       <input type="text" id="searchInput" placeholder="Search event, city, group…" aria-label="Search the records">
       <button id="searchClear" type="button" aria-label="Clear search" title="Clear search">×</button>
     </div>
+    <button type="button" id="sideToggle" aria-expanded="false" aria-controls="sidebar">Filters ▾</button>
 
     <div class="side-group">
       <div class="side-head"><span class="section-title">Filters</span><button type="button" class="link-btn" onclick="document.getElementById('resetBtn').click()">Reset all</button></div>
@@ -476,6 +518,8 @@
         <div class="dropdown" id="cnDropdown"><button type="button" class="dd-btn" id="cnBtn"></button><div class="dropdown-panel" id="cnPanel"></div></div></div>
       </div>
       <div class="side-sec" data-sec="s2">Incident <span>▾</span></div><div class="side-body" id="s2">
+      <div class="field-block"><div class="ctrl-label">Motive</div>
+        <div class="dropdown" id="moDropdown"><button type="button" class="dd-btn" id="moBtn"></button><div class="dropdown-panel" id="moPanel"></div></div></div>
       <div class="field-block"><div class="ctrl-label">Mode of attack</div>
         <div class="dropdown" id="modeDropdown">
         <button type="button" id="modeDropdownBtn">All modes ▾</button>
@@ -492,8 +536,8 @@
       </div>
       </div>
       <div class="side-sec" data-sec="s3">Evidence <span>▾</span></div><div class="side-body" id="s3">
-        <label class="side-chk"><input type="checkbox" id="fSrc"><span>Has a source link</span><span class="cnt" id="fSrcN"></span></label>
-        <label class="side-chk"><input type="checkbox" id="fNames"><span>Victims' names recorded</span><span class="cnt" id="fNamesN"></span></label>
+        <label class="side-chk"><input type="checkbox" id="fSrc"><span>Source link available</span><span class="cnt" id="fSrcN"></span></label>
+        <label class="side-chk"><input type="checkbox" id="fNames"><span>Victims' names available</span><span class="cnt" id="fNamesN"></span></label>
       </div>
     </div>
 
@@ -567,9 +611,9 @@
           <button type="button" class="ex-btn" id="exWhole">Whole dataset</button>
           <button type="button" class="ex-btn primary" id="exShowAll">Show every incident in this period</button>
           <label class="chk"><input type="checkbox" id="exUseFilters"> Also apply the filters on the left</label>
-          <label class="chk"><input type="checkbox" id="exOnlyGrp"> Only incidents with a group recorded</label>
+          <span id="exPerpFilters" style="display:none;gap:14px;align-items:center;flex-wrap:wrap;"><label class="chk"><input type="checkbox" id="exOnlyGrp"> Only incidents with a group recorded</label>
           <label class="chk"><input type="checkbox" id="exOnlyConv"> Only incidents with a conviction</label>
-          <label>Type of perpetrator <select id="exType"></select></label>
+          <label>Type of perpetrator <select id="exType"></select></label></span>
         </div>
       </div>
       <div id="explore-body"></div>
@@ -989,6 +1033,10 @@ document.getElementById('searchInput').addEventListener('input', e => {
   searchQuery = e.target.value;
   render();
 });
+document.getElementById('sideToggle').addEventListener('click', () => {
+  const sb = document.getElementById('sidebar'), open = sb.classList.toggle('open');
+  const t = document.getElementById('sideToggle'); t.setAttribute('aria-expanded', open); t.textContent = open ? 'Filters ▴' : 'Filters ▾';
+});
 document.getElementById('searchClear').addEventListener('click', () => {
   searchQuery = '';
   document.getElementById('searchInput').value = '';
@@ -1052,6 +1100,7 @@ const MANUAL_POINT = { 'Saint Lucia': [-60.98, 13.9] };
    A null set means "all". They feed the map, globe, list and Explore through filteredData(). */
 const XF = {
   cn:  { f: d => d.cc, label: 'All countries', sel: null },
+  mo:  { f: d => (!d.motB || String(d.motB).toLowerCase().startsWith('unknown')) ? 'Not recorded' : d.motB, label: 'All motives', sel: null },
   oc:  { f: d => d.occB || 'Not recorded', label: 'All places and occasions', sel: null },
 };
 let xfSrc = false, xfNames = false;
@@ -1064,7 +1113,7 @@ const xfPass = d => {
 function initXF() {
   const ALL = window.PLORABUNT_DATA;
   const vals = { cn: null, oc: null, ty: null };
-  const order = (k, arr) => k === 'oc' ? OCC_ORDER.filter(x => arr.includes(x)) : k === 'ty' ? PERP_ORDER.typB.filter(x => arr.includes(x)).concat(arr.filter(x => !PERP_ORDER.typB.includes(x))) : arr.sort((a, b) => a.localeCompare(b));
+  const order = (k, arr) => k === 'mo' ? MOT_ORDER.filter(x => arr.includes(x)).concat(arr.filter(x => !MOT_ORDER.includes(x))) : k === 'oc' ? OCC_ORDER.filter(x => arr.includes(x)) : k === 'ty' ? PERP_ORDER.typB.filter(x => arr.includes(x)).concat(arr.filter(x => !PERP_ORDER.typB.includes(x))) : arr.sort((a, b) => a.localeCompare(b));
   Object.keys(XF).forEach(k => {
     const counts = d3.rollups(ALL, v => v.length, XF[k].f), list = order(k, counts.map(c => c[0])), cnt = Object.fromEntries(counts);
     const btn = document.getElementById(k + 'Btn'), panel = document.getElementById(k + 'Panel');
@@ -1221,6 +1270,7 @@ const EX_NEUTRAL = { light: '#cfcac5', dark: '#4a4340' };
 const EX_YEARS = (() => { const ys = window.PLORABUNT_DATA.map(d => d.y).filter(y => y); return [Math.min(...ys), Math.max(...ys)]; })();
 const PERP_LABEL = { typB:'Type of perpetrator', wpnB:'Weapon used', nkB:'Number of attackers', survB:'Did the attackers survive?', krel:"Attackers' religion", grpB:'Group', ideB:'Ideology',
   motB:'Motive', claimB:'Claim of responsibility', justB:'Legal outcome', kage:'Age band', kgen:'Gender', kloc:'Local or foreign', kapp:'Appearance and approach' };
+const MOT_ORDER = ['Sectarian conflict','Religious or doctrinal','Political, separatist or anti-state','Ethnic or communal conflict','Revenge or retaliation','Anti-Muslim hatred (Islamophobia)','Antisemitism','Anti-Christian hatred','Other hate crime','Other','Unspecified'];
 const PERP_ORDER = {
   nkB: ['One attacker','Two attackers','Three or more','Not recorded'],
   typB: ['Jihadist or Islamist organisation','Separatist or nationalist movement','Marxist or Maoist insurgency','Ethnic, communal or local militia','State or security forces','Far-right or hate-based group','Other named group','Lone attacker (no group recorded)','Two or more attackers, no group recorded','Not recorded'],
@@ -1253,9 +1303,10 @@ let exRows = [];             // rows currently listed, for the click handler
 function exBase() {
   const whole = exFrom === EX_YEARS[0] && exTo === EX_YEARS[1];
   let d = exUseFilters ? filteredData() : window.PLORABUNT_DATA;
-  if (exOnlyGrp) d = d.filter(r => r.grpB && r.grpB !== 'Not recorded');
-  if (exOnlyConv) d = d.filter(r => r.justB === 'Convicted or sentenced');
-  if (exType) d = d.filter(r => pv(r, 'typB') === exType);
+  const pt = exTab === 'perps';
+  if (pt && exOnlyGrp) d = d.filter(r => r.grpB && r.grpB !== 'Not recorded');
+  if (pt && exOnlyConv) d = d.filter(r => r.justB === 'Convicted or sentenced');
+  if (pt && exType) d = d.filter(r => pv(r, 'typB') === exType);
   return whole ? d : d.filter(r => r.y >= exFrom && r.y <= exTo);
 }
 const exLabel = (d, field) => (field === 'occB' || PERP_LABEL[field]) ? pv(d, field) : (d[field] || 'Unknown');
@@ -1309,6 +1360,7 @@ function exColours(keys) {
   });
   document.querySelectorAll('#exTab button').forEach(b => b.addEventListener('click', () => {
     exTab = b.dataset.tab; exSel = null;
+    document.getElementById('exPerpFilters').style.display = exTab === 'perps' ? 'flex' : 'none';
     exSplit = exTab === 'perps' ? 'typB' : 'modeB';
     document.querySelectorAll('#exTab button').forEach(x => x.classList.toggle('active', x === b));
     renderExplore();
@@ -1376,7 +1428,7 @@ function renderExplore() {
   const val = items => metric === 'victims' ? d3.sum(items, i => i.vicN) : items.length;
   const unit = metric === 'victims' ? 'victims killed (approx.)' : 'incidents';
   const body = document.getElementById('explore-body');
-  const whole = exFrom === EX_YEARS[0] && exTo === EX_YEARS[1] && !exUseFilters && !exOnlyGrp && !exOnlyConv && !exType;
+  const whole = exFrom === EX_YEARS[0] && exTo === EX_YEARS[1] && !exUseFilters && !(exTab === 'perps' && (exOnlyGrp || exOnlyConv || exType));
   document.getElementById('explore-meta').textContent = whole
     ? `The whole dataset: ${fmtN(total)} incidents, ${EX_YEARS[0]} to ${EX_YEARS[1]}. Click any bar, cell or line to open the incidents behind it.`
     : `${fmtN(data.length)} of ${fmtN(total)} incidents, ${exFrom} to ${exTo}${exUseFilters ? ', with the filters on the left' : ''}. Click any bar, cell or line to open the incidents behind it.`;
@@ -1455,24 +1507,25 @@ function renderExplore() {
     const m = new Map();
     data.forEach(d => { const k = pv(d, f); (m.get(k) || m.set(k, []).get(k)).push(d); });
     let ks = order ? order.filter(k => m.has(k)) : Array.from(m.keys());
-    if (!order) ks.sort((a, b) => (a === 'Not recorded') - (b === 'Not recorded') || val(m.get(b)) - val(m.get(a)));
+    const rk = k => k === 'Not recorded' ? 3 : k === 'Unspecified' ? 2 : k === 'Other' ? 1 : 0;
+    if (!order) ks.sort((a, b) => rk(a) - rk(b) || val(m.get(b)) - val(m.get(a)));
     if (extra && ks.length > extra) {            // keep the biggest, fold the rest into "Other"
-      const nr = ks.includes('Not recorded'), core = ks.filter(k => k !== 'Not recorded' && k !== 'Other');
+      const tail = ks.filter(k => k === 'Unspecified' || k === 'Not recorded'), core = ks.filter(k => k !== 'Not recorded' && k !== 'Unspecified' && k !== 'Other');
       const keep = core.slice(0, extra), rest = core.slice(extra);
       const other = [].concat(m.has('Other') ? m.get('Other') : [], ...rest.map(k => m.get(k)));
-      ks = keep.concat(other.length ? ['Other'] : [], nr ? ['Not recorded'] : []);
+      ks = keep.concat(other.length ? ['Other'] : [], tail);
       if (other.length) m.set('Other', other);
     }
     const vals = ks.map(k => [k, val(m.get(k))]), mx = d3.max(vals, v => v[1]) || 1;
-    const nrN = (m.get('Not recorded') || []).length;
+    const nrN = (m.get('Not recorded') || []).length, unsN = (m.get('Unspecified') || []).length;
     return { html: vals.map(([k, v]) => `<button type="button" class="ex-bar${isSel('f|'+f+'|'+k)?' ex-sel':''}" data-sel="${exAttr('f', f, k)}"><span class="lab">${esc(k)}</span>
-      <span class="trk"><span class="fil ${k==='Not recorded'?'muted':''}" style="display:block;width:${(v/mx*100).toFixed(1)}%"></span></span><span class="val">${fmtN(v)}</span></button>`).join(''),
-      recorded: data.length - nrN };
+      <span class="trk"><span class="fil ${k==='Not recorded'||k==='Unspecified'?'muted':''}" style="display:block;width:${(v/mx*100).toFixed(1)}%"></span></span><span class="val">${fmtN(v)}</span></button>`).join(''),
+      recorded: data.length - nrN - unsN, unspecified: unsN, notrec: nrN };
   };
-  const barCard = (f, sub, order, extra, wide) => {
+  const barCard = (f, sub, order, extra, wide, info) => {
     const b = barsFor(f, order, extra);
-    return `<div class="ex-card${wide?' wide':''}"><h3>${PERP_LABEL[f]}</h3><div class="sub">${sub} Click a line to list the incidents.</div>${b.html}
-      <div class="note">Recorded for ${fmtN(b.recorded)} of ${fmtN(data.length)} incidents (${pct(b.recorded)}%). The rest are shown as "Not recorded" and are not guessed.</div></div>`;
+    return `<div class="ex-card${wide?' wide':''}"><h3>${PERP_LABEL[f]}${info ? `<span class="info"><button type="button" aria-label="What do these categories mean?">i</button><span class="tip" role="tooltip">${info}</span></span>` : ''}</h3><div class="sub">${sub} Click a line to list the incidents.</div>${b.html}
+      <div class="note">Recorded for ${fmtN(b.recorded)} of ${fmtN(data.length)} incidents (${pct(b.recorded)}%).${b.unspecified ? ` In ${fmtN(b.unspecified)} the sources give no motive, or say it is unknown ("Unspecified").` : ''}${b.notrec ? ' The rest are shown as "Not recorded".' : ''} Nothing is guessed.</div></div>`;
   };
   let perpCards = '';
   if (exTab === 'perps') {
@@ -1523,8 +1576,7 @@ function renderExplore() {
           <div class="sub">These characteristics are not in the workbook yet, so nothing is shown and nothing is guessed.</div>
           <div class="note">The data model already has a place for each of them: <b>${PERP_LABEL.kage}</b>, <b>${PERP_LABEL.kgen}</b> and <b>${PERP_LABEL.kloc}</b>. They will appear here as soon as sourced values are added, with the same click-through to the incidents. Attire is handled in the pictogram card above. No individual is named or pictured.</div></div>`;
     perpCards = card1 + cardTyp + cardTypX + barCard('wpnB', 'The weapon recorded for the attack, in broad categories only. Several categories give "Multiple types".', PERP_ORDER.wpnB, null, true) + barCard('nkB', 'How many people carried out the attack.', PERP_ORDER.nkB) + barCard('survB', 'Whether at least one attacker survived the attack.', PERP_ORDER.survB)
-      + cardX + barCard('ideB', 'The ideology attributed to the attackers, grouped by fixed rules.', null, 8) + barCard('motB', 'The motive reported, grouped by fixed rules.', null, 8)
-      + barCard('grpB', 'The group recorded for the attack, with spelling variants merged. A named group is not the same as a typical attacker: many incidents have none.', null, 14, true)
+      + cardX + barCard('ideB', 'The ideology attributed to the attackers, grouped by fixed rules.', null, 8) + barCard('motB', 'The primary motive the sources give; each incident has one.', MOT_ORDER.concat(['Not recorded']), 0, true, '<b>How the groups are defined</b>When a source text fits several groups, the first that applies wins: a stated trigger (revenge) and a named hatred come before general context.<b>Revenge or retaliation</b>a trigger the source states.<b>Hatred (anti-Muslim, antisemitism, anti-Christian, other)</b>the victims are targeted for who they are.<b>Sectarian conflict</b>between branches of one religion.<b>Religious or doctrinal</b>enforcing or defending belief.<b>Ethnic or communal conflict</b>conflict between communities.<b>Political, separatist or anti-state</b>aims against a state or for a territory.<b>Other</b>a stated motive that fits none of the groups, for example robbery.<b>Unspecified</b>no motive given, or stated to be unknown.')      + barCard('grpB', 'The group recorded for the attack, with spelling variants merged. A named group is not the same as a typical attacker: many incidents have none.', null, 14, true)
       + barCard('claimB', 'Whether a group publicly claimed the attack.', PERP_ORDER.claimB) + barCard('justB', 'What the sources report about arrest, trial and sentence.', PERP_ORDER.justB)
       + cardDress + cardNew;
   }
