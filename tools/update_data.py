@@ -112,7 +112,15 @@ if _SHARED:
     DUPLICATE_CUTOFF = _SHARED.get("duplicateCutoff", 0.82)
     OCCASION_RULES = [(r["label"], [re.compile(x, re.I) for x in r["patterns"]])
                       for r in _SHARED.get("occasionRules", [])]
+    def _rules(key):
+        return [(r["label"], [re.compile(x, re.I) for x in r["patterns"]]) for r in _SHARED.get(key, [])]
+    GROUP_RULES, IDEOLOGY_RULES, MOTIVE_RULES = _rules("groupAliases"), _rules("ideologyRules"), _rules("motiveRules")
+    GROUP_TYPE_RULES = _rules("groupTypeRules")
+    WEAPON_RULES = [(r["label"], bool(r.get("generic")), [re.compile(x, re.I) for x in r["patterns"]])
+                    for r in _SHARED.get("weaponRules", [])]
 else:
+    GROUP_RULES = IDEOLOGY_RULES = MOTIVE_RULES = GROUP_TYPE_RULES = []
+    WEAPON_RULES = []
     DUPLICATE_CUTOFF = 0.82
     OCCASION_RULES = []     # without normalisation.json every occasion falls into "Other"
 
@@ -148,6 +156,122 @@ def bucket_occasion(raw: str) -> str:
         if any(p.search(t) for p in pats):
             return label
     return "Other"
+
+
+# --------------------------------------------------------------------------
+# Perpetrator fields. Only aggregate, analysable attributes are imported.
+# Names of individuals (KILLERS' NAMES) are deliberately never read.
+# --------------------------------------------------------------------------
+
+NOT_RECORDED = "Not recorded"
+PERP_FIELDS = ("nk", "nkB", "survB", "krel", "grpB", "ideB", "motB", "claimB", "justB")
+PERP_DEFAULTS = {"nk": None, "nkB": NOT_RECORDED, "survB": NOT_RECORDED, "krel": NOT_RECORDED,
+                 "grpB": NOT_RECORDED, "ideB": NOT_RECORDED, "motB": NOT_RECORDED,
+                 "claimB": NOT_RECORDED, "justB": NOT_RECORDED}
+# Optional columns. If the workbook has a header with one of these names, the value is
+# imported as it stands (it must come from a verified source). They are absent today.
+OPTIONAL_COLUMNS = {"KILLERS' AGE BAND": "kage", "KILLERS' GENDER": "kgen",
+                    "LOCAL OR FOREIGN ATTACKER": "kloc", "APPEARANCE AND APPROACH": "kapp"}
+
+
+def _unknown(t: str) -> bool:
+    t = (t or "").strip().lower()
+    return (not t) or t.startswith("unknown") or t in ("n/a", "none", "no", "-", "—")
+
+
+def _by_rules(raw: str, rules) -> str:
+    t = re.sub(r"\s+", " ", (raw or "").strip())
+    if _unknown(t) or re.match(r"^the specific motive (for the attack )?(is|was) unknown\.?$", t, re.I):
+        return NOT_RECORDED
+    for label, pats in rules:
+        if any(p.search(t) for p in pats):
+            return label
+    return "Other"
+
+
+def bucket_group(raw: str) -> str:
+    t = re.sub(r"\s*\((uncertain|possibly|alleged)[^)]*\)\s*$", "", (raw or "").strip(), flags=re.I)
+    if _unknown(t):
+        return NOT_RECORDED
+    for label, pats in GROUP_RULES:
+        if any(p.search(t) for p in pats):
+            return label
+    return re.sub(r"\s+", " ", t)
+
+
+def perpetrator_type(group_raw: str, nk) -> str:
+    """Kind of perpetrator. A recorded group is typed by fixed rules on its name;
+    with no group recorded the type follows from the number of attackers."""
+    g = re.sub(r"\s+", " ", (group_raw or "").strip())
+    if not _unknown(g):
+        for label, pats in GROUP_TYPE_RULES:
+            if any(p.search(g) for p in pats):
+                return label
+        return "Other named group"
+    if nk is None:
+        return NOT_RECORDED
+    return "Lone attacker (no group recorded)" if nk == 1 else "Two or more attackers, no group recorded"
+
+
+def bucket_weapon(raw: str) -> str:
+    """Category of weapon from the free text. Several categories give 'Multiple types'."""
+    t = re.sub(r"\s+", " ", (raw or "").strip())
+    if _unknown(t) or re.match(r"^unknown( (gun|explosive|weapon) type)?\.?$", t, re.I):
+        return NOT_RECORDED
+    hits = [(label, generic) for label, generic, pats in WEAPON_RULES if any(p.search(t) for p in pats)]
+    if any(not g for _, g in hits):
+        hits = [h for h in hits if not h[1]]
+    if not hits:
+        return "Other"
+    return hits[0][0] if len(hits) == 1 else "Multiple types"
+
+
+def perp_fields(v: dict) -> dict:
+    """v holds the raw cell text for the perpetrator columns, keyed by column name."""
+    n = re.search(r"\d+", v.get("No. KILLERS", ""))
+    nk = int(n.group(0)) if n and not _unknown(v.get("No. KILLERS", "")) else None
+    nkB = NOT_RECORDED if nk is None else ("One attacker" if nk == 1 else "Two attackers" if nk == 2 else "Three or more")
+
+    sv = (v.get("No. KILLERS SURVIVED", "") or "").strip().lower()
+    if _unknown(sv):
+        survB = NOT_RECORDED
+    elif re.match(r"^(no|none|died|dead|\d+ dead|killed|all )", sv) or "died" in sv:
+        survB = "None survived"
+    elif sv.startswith("yes") or re.match(r"^\d+", sv) or re.search(r"surviv|arrest|captur", sv):
+        survB = "At least one survived"
+    else:
+        survB = NOT_RECORDED
+
+    kr = (v.get("KILLERS' RELIGION", "") or "").strip()
+    krel = NOT_RECORDED if _unknown(kr) else bucket_religion(re.sub(r"\s*\(uncertain\)", "", kr, flags=re.I))
+    if krel == "Other/Unknown":
+        krel = "Other"
+
+    cl = (v.get("CLAIM", "") or "").strip().lower()
+    if _unknown(cl):
+        claimB = NOT_RECORDED
+    elif re.search(r"no group claimed|not claimed|no claim|unclaimed", cl):
+        claimB = "No group claimed it"
+    elif cl.startswith("yes") or "claimed responsibility" in cl or "claimed" in cl:
+        claimB = "A group claimed it"
+    else:
+        claimB = NOT_RECORDED
+
+    cv, tr, se = (v.get("N.KILLERS CONVICTED", "") or "").strip().lower(), (v.get("TRIAL", "") or "").strip().lower(), (v.get("SENTENCE", "") or "").strip().lower()
+    if cv.startswith("yes") or re.match(r"^[1-9]\d*\b", cv) or "convict" in cv + tr + se or se.startswith("yes") or re.search(r"imprison|sentenc|execut|death", se):
+        justB = "Convicted or sentenced"
+    elif re.search(r"arrest|ongoing|in absentia", cv + tr + se) or tr.startswith("yes"):
+        justB = "Arrested or on trial"
+    elif cv in ("no", "none") or (tr == "no" and se == "no"):
+        justB = "No conviction recorded"
+    else:
+        justB = NOT_RECORDED
+
+    return {"nk": nk, "nkB": nkB, "survB": survB, "krel": krel,
+            "grpB": bucket_group(v.get("KILLERS' MILITANT GROUP", "")),
+            "ideB": _by_rules(v.get("KILLERS' IDEOLOGY", ""), IDEOLOGY_RULES),
+            "motB": _by_rules(v.get("MOTIVE", ""), MOTIVE_RULES),
+            "claimB": claimB, "justB": justB}
 
 
 def first_date(raw) -> str:
@@ -197,7 +321,9 @@ COLUMNS = _SHARED["columns"] if _SHARED else {
 }
 
 FIELD_ORDER = ["d", "y", "ev", "city", "country", "cc", "rel", "relRaw", "worship",
-               "mode", "vic", "inj", "grp", "src", "modeB", "vicN", "occ", "place", "occB"]
+               "mode", "vic", "inj", "grp", "src", "modeB", "vicN", "occ", "place", "occB",
+               "nk", "nkB", "survB", "krel", "grpB", "ideB", "motB", "claimB", "justB",
+               "wpn", "wpnB", "typB", "kage", "kgen", "kloc", "kapp"]
 
 
 def read_rows(path: Path):
@@ -240,6 +366,10 @@ def read_workbook(path: Path):
                   "before trusting the output.")
             sys.exit(1)
 
+    hdr = [clean(h) for h in header]
+    optional_idx = {f: hdr.index(name) for name, f in OPTIONAL_COLUMNS.items() if name in hdr}
+    if optional_idx:
+        print("  optional perpetrator columns found: " + ", ".join(optional_idx))
     records, skipped, unknown_countries = [], [], set()
     for n, row in enumerate(rows, start=2):
         if not row or row[0] in (None, "") or not str(row[0]).strip():
@@ -282,6 +412,13 @@ def read_workbook(path: Path):
             "occ": clean(row[COLUMNS["PARTICULAR OCCASION"]]) or "Unknown",
             "place": clean(row[COLUMNS["PLACE OF WORSHIP"]]) or "Unknown",
             "occB": bucket_occasion(clean(row[COLUMNS["PARTICULAR OCCASION"]])),
+            "typB": perpetrator_type(clean(row[COLUMNS["KILLERS' MILITANT GROUP"]]), perp_fields({"No. KILLERS": clean(row[COLUMNS["No. KILLERS"]])})["nk"]),
+            "wpn": clean(row[COLUMNS["WEAPONS"]]) or "Unknown",
+            "wpnB": bucket_weapon(clean(row[COLUMNS["WEAPONS"]])),
+            **perp_fields({k: clean(row[COLUMNS[k]]) for k in COLUMNS if k in (
+                "No. KILLERS", "No. KILLERS SURVIVED", "CLAIM", "KILLERS' RELIGION", "KILLERS' IDEOLOGY",
+                "MOTIVE", "N.KILLERS CONVICTED", "TRIAL", "SENTENCE", "KILLERS' MILITANT GROUP")}),
+            **{f: clean(row[i]) for f, i in optional_idx.items() if clean(row[i]) and not _unknown(clean(row[i]))},
         })
     return records, skipped, unknown_countries
 
@@ -325,9 +462,18 @@ def serialise(rec):
     return json.dumps(ordered, ensure_ascii=False)
 
 
-def backfill(existing, incoming):
-    """Add occ, place and occB to records that lack them, by matching each to its
+TYP_FIELDS = ("typB",)
+TYP_DEFAULTS = {"typB": NOT_RECORDED}
+WPN_FIELDS = ("wpn", "wpnB")
+WPN_DEFAULTS = {"wpn": "Unknown", "wpnB": NOT_RECORDED}
+OCC_FIELDS = ("occ", "place", "occB")
+OCC_DEFAULTS = {"occ": "Unknown", "place": "Unknown", "occB": "Not recorded"}
+
+
+def backfill(existing, incoming, fields=OCC_FIELDS, defaults=OCC_DEFAULTS):
+    """Add the given fields to records that lack them, by matching each to its
     workbook row. Nothing else in any record is changed. Returns (records, report)."""
+    marker = fields[-1] if fields[-1] != "kapp" else fields[0]
     by_key = {}
     by_dc = {}
     for r in incoming:
@@ -336,7 +482,7 @@ def backfill(existing, incoming):
     out, how = [], {"exact": 0, "close": 0, "single": 0, "already": 0}
     unmatched = []
     for rec in existing:
-        if "occB" in rec:
+        if marker in rec:
             how["already"] += 1
             out.append(rec)
             continue
@@ -355,10 +501,15 @@ def backfill(existing, incoming):
         new = dict(rec)
         if hit:
             how[kind] += 1
-            new["occ"], new["place"], new["occB"] = hit["occ"], hit["place"], hit["occB"]
+            for f in fields:
+                new[f] = hit.get(f, defaults.get(f))
+            for f in OPTIONAL_COLUMNS.values():
+                if f in hit and f not in new:
+                    new[f] = hit[f]
         else:
             unmatched.append(rec)
-            new["occ"], new["place"], new["occB"] = "Unknown", "Unknown", "Not recorded"
+            for f in fields:
+                new[f] = defaults.get(f)
         out.append(new)
     return out, how, unmatched
 
@@ -396,7 +547,11 @@ def main():
     print(f"  {len(existing)} records currently in {args.data.name}")
 
     if args.backfill:
-        final, how, unmatched = backfill(existing, incoming)
+        final = existing
+        for fields, defaults in ((OCC_FIELDS, OCC_DEFAULTS), (PERP_FIELDS, PERP_DEFAULTS), (WPN_FIELDS, WPN_DEFAULTS), (TYP_FIELDS, TYP_DEFAULTS)):
+            final, how, unmatched = backfill(final, incoming, fields, defaults)
+            print(f"  backfill of {', '.join(fields)}: matched exactly {how['exact']}, close {how['close']}, "
+                  f"single {how['single']}, already present {how['already']}, no match {len(unmatched)}")
         print(f"\nMODE: backfill. Matched exactly: {how['exact']}, by close wording: {how['close']}, "
               f"by being the only record that day in that country: {how['single']}, "
               f"already had the fields: {how['already']}, no match: {len(unmatched)}.")
