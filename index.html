@@ -442,6 +442,11 @@
   main[data-view="globe"] #legendFloat{right:16px;}
   main.panel-open[data-view="globe"] #legendFloat{right:calc(max(280px,min(400px,42vw)) + 16px);}
   #legendFloat #legend{pointer-events:auto;padding:7px 11px 6px;width:max-content;font-size:10px;}
+  #legendFloat #legend{max-width:100%;box-sizing:border-box;}
+  #legend .lg-side{min-width:0;max-width:170px;}
+  #detail-links .rep-alt{font-size:inherit;color:var(--ink-dim)}
+  #detail-links .rep-link{display:inline-block;margin-top:4px}
+  #legend .lg-side>.title{white-space:normal;line-height:1.35;}
   #resetBtn{display:none;}   /* the sidebar has "Reset all"; the button stays in the page because the script clicks it */
 </style>
 <style>
@@ -550,6 +555,7 @@
 
     <div class="side-group">
       <button id="addCaseBtn" class="primary-btn" style="width:100%;padding:11px 12px;font-size:12.5px;">+ Submit a case</button>
+      <a id="reportGeneral" href="#" style="display:block;text-align:center;font-size:11.5px;margin-top:8px;color:var(--ink-dim);">Report an issue</a>
     </div>
 
     <div class="sidebar-footer">
@@ -2015,6 +2021,11 @@ function openDetail(it) {
   if (it.src) links.push(`<a href="${it.src}" target="_blank" rel="noopener">Source ↗</a>`);
   if (it.attachment) links.push(`<a href="${it.attachment.dataUrl}" download="${it.attachment.name}">📎 ${it.attachment.name}</a>`);
   linksEl.innerHTML = links.length ? links.join('<br>') : '';
+  const rTitle = 'Issue with record: ' + (it.ev || 'Untitled') + ' (' + fmtDate(it.d) + ')';
+  const rBody = 'Record: ' + (it.ev || 'Untitled') + '\nDate: ' + fmtDate(it.d) + '\nPlace: ' + [it.city, it.country].filter(Boolean).join(', ')
+    + '\n\nWhat is wrong (field, correct value, source link):\n';
+  linksEl.innerHTML += (links.length ? '<br>' : '') + '<a class="rep-link" href="mailto:' + SUBMIT_EMAIL + '?subject=' + encodeURIComponent(rTitle) + '&body=' + encodeURIComponent(rBody) + '">Report an issue with this record</a>'
+    + ' <span class="rep-alt">or <a href="https://github.com/' + GITHUB_REPO + '/issues/new?title=' + encodeURIComponent(rTitle) + '&body=' + encodeURIComponent(rBody) + '" target="_blank" rel="noopener">on GitHub ↗</a></span>';
   document.getElementById('detailOverlay').classList.add('open');
 }
 document.getElementById('detailClose').addEventListener('click', () => document.getElementById('detailOverlay').classList.remove('open'));
@@ -2119,6 +2130,7 @@ document.addEventListener('keydown', e => {
 });
 
 const SUBMIT_EMAIL = 'amina.elganadi@unimore.it';
+document.getElementById('reportGeneral').addEventListener('click', e => { e.preventDefault(); window.location.href = 'mailto:' + SUBMIT_EMAIL + '?subject=' + encodeURIComponent('Plorabunt: issue report') + '&body=' + encodeURIComponent('What is wrong (page, record, field, correct value, source link):\n'); });
 function collectCase() {
   const errEl = document.getElementById('addError');
   errEl.textContent = '';
