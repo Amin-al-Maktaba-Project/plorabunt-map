@@ -83,6 +83,14 @@
 
   .dropdown{position:relative;width:100%;flex-shrink:0;}
   .dropdown button#relDropdownBtn,.dropdown button#modeDropdownBtn,.dropdown button#top10Btn{width:100%;text-align:left;border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:8px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dropdown button.dd-btn{width:100%;text-align:left;border:1px solid var(--line);background:transparent;color:var(--ink-dim);font-size:11.5px;padding:8px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .side-sec{display:flex;justify-content:space-between;align-items:center;margin:16px 0 6px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim);cursor:pointer;user-select:none;}
+  .side-sec:first-of-type{margin-top:8px;}
+  .side-body.shut{display:none;}
+  .side-body .field-block{margin-bottom:12px;}
+  .side-chk{display:flex;gap:8px;align-items:center;font-size:11.5px;color:var(--ink-dim);margin:7px 0;cursor:pointer;}
+  .side-chk input{accent-color:var(--red);}
+  .side-chk .cnt{margin-left:auto;font-size:10.5px;}
   .dropdown button:hover{border-color:var(--red-dim);color:var(--ink);}
   .dropdown-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;width:260px;max-height:300px;overflow-y:auto;background:var(--pop);border:1px solid var(--line);border-radius:6px;padding:8px;z-index:15;box-shadow:0 8px 24px var(--shadow);}
   .dropdown-panel.open{display:block;}
@@ -456,20 +464,32 @@
 
     <div class="side-group">
       <div class="side-head"><span class="section-title">Filters</span><button type="button" class="link-btn" onclick="document.getElementById('resetBtn').click()">Reset all</button></div>
+      <div class="side-sec" data-sec="s1">Time and place <span>▾</span></div><div class="side-body" id="s1">
       <div class="field-block"><div class="ctrl-label">Date range</div>
         <div class="yr-row"><input type="date" id="dateFrom" class="date-input" min="1982-01-01" max="2026-12-31" value="1982-01-01"><span class="ctrl-label">to</span><input type="date" id="dateTo" class="date-input" min="1982-01-01" max="2026-12-31" value="2026-12-31"></div>
       </div>
+      <div class="field-block"><div class="ctrl-label">Country</div>
+        <div class="dropdown" id="cnDropdown"><button type="button" class="dd-btn" id="cnBtn"></button><div class="dropdown-panel" id="cnPanel"></div></div></div>
+      </div>
+      <div class="side-sec" data-sec="s2">Incident <span>▾</span></div><div class="side-body" id="s2">
+      <div class="field-block"><div class="ctrl-label">Mode of attack</div>
+        <div class="dropdown" id="modeDropdown">
+        <button type="button" id="modeDropdownBtn">All modes ▾</button>
+        <div class="dropdown-panel" id="modeDropdownPanel"></div>
+      </div>
+      </div>
+      <div class="field-block"><div class="ctrl-label">Place and occasion</div>
+        <div class="dropdown" id="ocDropdown"><button type="button" class="dd-btn" id="ocBtn"></button><div class="dropdown-panel" id="ocPanel"></div></div></div>
       <div class="field-block"><div class="ctrl-label">Victims' religion</div>
         <div class="dropdown" id="relDropdown">
         <button type="button" id="relDropdownBtn">All religions ▾</button>
         <div class="dropdown-panel" id="relDropdownPanel"></div>
       </div>
       </div>
-      <div class="field-block"><div class="ctrl-label">Mode of attack</div>
-        <div class="dropdown" id="modeDropdown">
-        <button type="button" id="modeDropdownBtn">All modes ▾</button>
-        <div class="dropdown-panel" id="modeDropdownPanel"></div>
       </div>
+      <div class="side-sec" data-sec="s3">Evidence <span>▾</span></div><div class="side-body" id="s3">
+        <label class="side-chk"><input type="checkbox" id="fSrc"><span>Has a source link</span><span class="cnt" id="fSrcN"></span></label>
+        <label class="side-chk"><input type="checkbox" id="fNames"><span>Victims' names recorded</span><span class="cnt" id="fNamesN"></span></label>
       </div>
     </div>
 
@@ -543,6 +563,9 @@
           <button type="button" class="ex-btn" id="exWhole">Whole dataset</button>
           <button type="button" class="ex-btn primary" id="exShowAll">Show every incident in this period</button>
           <label class="chk"><input type="checkbox" id="exUseFilters"> Also apply the filters on the left</label>
+          <label class="chk"><input type="checkbox" id="exOnlyGrp"> Only incidents with a group recorded</label>
+          <label class="chk"><input type="checkbox" id="exOnlyConv"> Only incidents with a conviction</label>
+          <label>Type of perpetrator <select id="exType"></select></label>
         </div>
       </div>
       <div id="explore-body"></div>
@@ -984,6 +1007,8 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   dateFrom = '19820101'; dateTo = '20261231';
   metric = 'incidents';
   searchQuery = '';
+  Object.values(XF).forEach(x => x.reset && x.reset());
+  xfSrc = xfNames = false; document.getElementById('fSrc').checked = false; document.getElementById('fNames').checked = false;
   document.getElementById('searchInput').value = '';
   document.getElementById('dateFrom').value = '1982-01-01';
   document.getElementById('dateTo').value = '2026-12-31';
@@ -1017,10 +1042,50 @@ const MANUAL_CENTROID = {
 };
 const MANUAL_POINT = { 'Saint Lucia': [-60.98, 13.9] };
 
+/* Extra filters: country, place and occasion, perpetrator type, source link, names.
+   A null set means "all". They feed the map, globe, list and Explore through filteredData(). */
+const XF = {
+  cn:  { f: d => d.cc, label: 'All countries', sel: null },
+  oc:  { f: d => d.occB || 'Not recorded', label: 'All places and occasions', sel: null },
+};
+let xfSrc = false, xfNames = false;
+const xfPass = d => {
+  for (const k in XF) if (XF[k].sel && !XF[k].sel.has(XF[k].f(d))) return false;
+  if (xfSrc && !d.src) return false;
+  if (xfNames && !NM(d)) return false;
+  return true;
+};
+function initXF() {
+  const ALL = window.PLORABUNT_DATA;
+  const vals = { cn: null, oc: null, ty: null };
+  const order = (k, arr) => k === 'oc' ? OCC_ORDER.filter(x => arr.includes(x)) : k === 'ty' ? PERP_ORDER.typB.filter(x => arr.includes(x)).concat(arr.filter(x => !PERP_ORDER.typB.includes(x))) : arr.sort((a, b) => a.localeCompare(b));
+  Object.keys(XF).forEach(k => {
+    const counts = d3.rollups(ALL, v => v.length, XF[k].f), list = order(k, counts.map(c => c[0])), cnt = Object.fromEntries(counts);
+    const btn = document.getElementById(k + 'Btn'), panel = document.getElementById(k + 'Panel');
+    const label = () => { const n = XF[k].sel ? XF[k].sel.size : list.length; btn.textContent = (n === list.length ? XF[k].label + (k === 'cn' ? ` (${list.length})` : '') : n === 0 ? 'None selected' : `${n} selected`) + ' ▾'; };
+    panel.innerHTML = `<div class="dropdown-action" data-act="all">Select all</div><div class="dropdown-action" data-act="none">Clear all</div><div class="dropdown-sep"></div>` +
+      list.map(v => `<label class="dropdown-row"><input type="checkbox" checked data-v="${esc(v)}"><span>${esc(v)}</span><span class="cnt">${fmtN(cnt[v])}</span></label>`).join('');
+    const sync = () => { const on = [...panel.querySelectorAll('input[data-v]')].filter(c => c.checked).map(c => c.dataset.v); XF[k].sel = on.length === list.length ? null : new Set(on); label(); render(); };
+    panel.addEventListener('change', sync);
+    panel.addEventListener('click', e => { e.stopPropagation(); const a = e.target.dataset.act; if (a) { panel.querySelectorAll('input[data-v]').forEach(c => c.checked = a === 'all'); sync(); } });
+    btn.addEventListener('click', e => { e.stopPropagation(); document.querySelectorAll('.dropdown-panel.open').forEach(x => { if (x !== panel) x.classList.remove('open'); }); panel.classList.toggle('open'); });
+    document.addEventListener('click', () => panel.classList.remove('open'));
+    XF[k].reset = () => { XF[k].sel = null; panel.querySelectorAll('input[data-v]').forEach(c => c.checked = true); label(); };
+    label();
+  });
+  const nSrc = ALL.filter(d => d.src).length, nNm = ALL.filter(d => NM(d)).length;
+  document.getElementById('fSrcN').textContent = fmtN(nSrc); document.getElementById('fNamesN').textContent = fmtN(nNm);
+  document.getElementById('fSrc').addEventListener('change', e => { xfSrc = e.target.checked; render(); });
+  document.getElementById('fNames').addEventListener('change', e => { xfNames = e.target.checked; render(); });
+  document.querySelectorAll('.side-sec').forEach(h => h.addEventListener('click', () => {
+    const b = document.getElementById(h.dataset.sec), shut = b.classList.toggle('shut'); h.lastElementChild.textContent = shut ? '▸' : '▾';
+  }));
+}
+
 function filteredData() {
   return window.PLORABUNT_DATA.filter(d => {
     const dd = (d.d||'').replace(/\D/g,'').padEnd(8,'0');
-    return dd >= dateFrom && dd <= dateTo && activeReligions.has((d.relRaw||'Unknown').trim()) && activeModes.has(d.modeB);
+    return dd >= dateFrom && dd <= dateTo && activeReligions.has((d.relRaw||'Unknown').trim()) && activeModes.has(d.modeB) && xfPass(d);
   });
 }
 
@@ -1175,13 +1240,16 @@ function dressIcon(cat, c) {
   return `<svg viewBox="0 0 40 56" width="44" height="62" aria-hidden="true">${head}${body}${extra}</svg>`;
 }
 let exTab = 'overview', exTypCols = 'modeB';
-let exSplit = 'modeB', exFrom = EX_YEARS[0], exTo = EX_YEARS[1], exUseFilters = false;
+let exType = '', exSplit = 'modeB', exFrom = EX_YEARS[0], exTo = EX_YEARS[1], exUseFilters = false, exOnlyGrp = false, exOnlyConv = false;
 let exSel = null;            // { id, title, pred }
 let exRows = [];             // rows currently listed, for the click handler
 
 function exBase() {
   const whole = exFrom === EX_YEARS[0] && exTo === EX_YEARS[1];
-  const d = exUseFilters ? filteredData() : window.PLORABUNT_DATA;
+  let d = exUseFilters ? filteredData() : window.PLORABUNT_DATA;
+  if (exOnlyGrp) d = d.filter(r => r.grpB && r.grpB !== 'Not recorded');
+  if (exOnlyConv) d = d.filter(r => r.justB === 'Convicted or sentenced');
+  if (exType) d = d.filter(r => pv(r, 'typB') === exType);
   return whole ? d : d.filter(r => r.y >= exFrom && r.y <= exTo);
 }
 const exLabel = (d, field) => (field === 'occB' || PERP_LABEL[field]) ? pv(d, field) : (d[field] || 'Unknown');
@@ -1240,6 +1308,11 @@ function exColours(keys) {
     renderExplore();
   }));
   document.getElementById('exShowAll').addEventListener('click', () => { exSel = exMakeSel('all'); renderExplore(true); });
+  { const sel = document.getElementById('exType'), present = [...new Set(window.PLORABUNT_DATA.map(r => pv(r, 'typB')))], tv = PERP_ORDER.typB.filter(t => present.includes(t)).concat(present.filter(t => !PERP_ORDER.typB.includes(t))).filter(t => t !== 'Not recorded').concat(['Not recorded']);
+    sel.innerHTML = '<option value="">All types</option>' + tv.map(t => `<option>${esc(t)}</option>`).join('');
+    sel.addEventListener('change', () => { exType = sel.value; exSel = null; renderExplore(); }); }
+  document.getElementById('exOnlyGrp').addEventListener('change', e => { exOnlyGrp = e.target.checked; exSel = null; renderExplore(); });
+  document.getElementById('exOnlyConv').addEventListener('change', e => { exOnlyConv = e.target.checked; exSel = null; renderExplore(); });
   document.getElementById('exUseFilters').addEventListener('change', e => { exUseFilters = e.target.checked; exSel = null; renderExplore(); });
 
   document.getElementById('explore-body').addEventListener('input', e => {
@@ -1297,7 +1370,7 @@ function renderExplore() {
   const val = items => metric === 'victims' ? d3.sum(items, i => i.vicN) : items.length;
   const unit = metric === 'victims' ? 'victims killed (approx.)' : 'incidents';
   const body = document.getElementById('explore-body');
-  const whole = exFrom === EX_YEARS[0] && exTo === EX_YEARS[1] && !exUseFilters;
+  const whole = exFrom === EX_YEARS[0] && exTo === EX_YEARS[1] && !exUseFilters && !exOnlyGrp && !exOnlyConv && !exType;
   document.getElementById('explore-meta').textContent = whole
     ? `The whole dataset: ${fmtN(total)} incidents, ${EX_YEARS[0]} to ${EX_YEARS[1]}. Click any bar, cell or line to open the incidents behind it.`
     : `${fmtN(data.length)} of ${fmtN(total)} incidents, ${exFrom} to ${exTo}${exUseFilters ? ', with the filters on the left' : ''}. Click any bar, cell or line to open the incidents behind it.`;
@@ -2684,6 +2757,7 @@ new ResizeObserver(() => {
 })();
 
 /* The Globe is the first view shown. */
+initXF();
 document.querySelector('#sidebarViewToggle button[data-view="globe"]').click();
 
 </script>
