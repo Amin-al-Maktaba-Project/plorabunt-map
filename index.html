@@ -497,18 +497,23 @@
   #sideToggle[aria-expanded="true"]{border-color:var(--red);color:var(--red)}
   #sidebar .side-group,#sidebar .sidebar-footer{display:none;flex:1 1 100%}
   #sidebar.open .side-group,#sidebar.open .sidebar-footer{display:block}
-  #mapControlsLeft{top:8px;left:8px;right:8px;max-width:none}
-  #mapControls,main.panel-open #mapControls{top:90px;left:8px;right:8px;max-width:none;justify-content:flex-start}
-  #explore-head{padding:134px 14px 14px}
-  #listView-head{padding:134px 14px 14px}
+  #mapControlsLeft{top:8px;left:8px;right:8px;max-width:none;flex-wrap:nowrap;gap:6px}
+  #mapControlsLeft .segmented button{padding:7px 8px;font-size:11px;letter-spacing:0}
+  #mapControls,main.panel-open #mapControls{top:52px;left:8px;right:8px;max-width:none;justify-content:flex-start}
+  #explore-head{padding:98px 14px 14px}
+  #listView-head{padding:98px 14px 14px}
   #globeHint{display:none}
-  main[data-view="explore"] #mapControls{top:90px}
+  main[data-view="explore"] #mapControls{top:52px}
   #resetBtn,#aboutBtn,#curatorBtn,#themeBtn,#fullBtn{padding:6px 10px}
   #legendFloat,main.panel-open #legendFloat,main[data-view="globe"] #legendFloat,main.panel-open[data-view="globe"] #legendFloat{left:8px;right:auto;bottom:calc(var(--banner-h,32px) + 54px);max-width:230px}
   main[data-view="map"] #legendFloat{bottom:calc(var(--banner-h,32px) + 8px)}
   main.panel-open #legendFloat{display:none}
   #legendFloat #legend{zoom:.74;opacity:.92;padding:6px 9px 5px}
   main[data-view="globe"] #legendFloat{bottom:calc(var(--banner-h,32px) + 50px)}
+  @media (max-height:720px){
+    main[data-view="globe"] #legendFloat,main.panel-open[data-view="globe"] #legendFloat{bottom:calc(var(--banner-h,32px) + 8px);max-width:calc(100% - 172px)}
+    #globeControls{left:auto;right:8px;bottom:8px}
+  }
   aside#panel{top:auto;bottom:0;left:0;right:0;width:100%;height:0;border-left:none;border-top:1px solid var(--line);transition:height .2s ease}
   aside#panel.open{width:100%;height:58%;box-shadow:0 -12px 30px var(--shadow)}
   #sourcesBanner{padding:8px 14px}
@@ -1708,8 +1713,19 @@ function globePalette() {
 function drawGlobe() {
   if (viewMode !== 'globe' || !G.ctx || !G.w || !window.__countries) return;
   const ctx = G.ctx, w = G.w, h = G.h, pal = globePalette();
-  const R = Math.min(w, h) / 2 * 0.9 * G.zoom;
-  const proj = G.proj.scale(R).translate([w/2, h/2]).rotate(G.rot);
+  /* on phones the controls sit over the globe area: keep the sphere in the free space between them */
+  let padT = 0, padB = 0;
+  if (window.matchMedia && window.matchMedia('(max-width:760px)').matches) {
+    const wr = document.getElementById('globe-wrap').getBoundingClientRect();
+    const mc = document.getElementById('mapControlsLeft'), lg = document.getElementById('legendFloat'), gc = document.getElementById('globeControls');
+    const mc2 = document.getElementById('mapControls');
+    padT = Math.max(0, ...[mc, mc2].filter(Boolean).map(e => e.getBoundingClientRect().bottom - wr.top + 6));
+    const tops = [lg, gc].filter(e => e && e.offsetParent !== null).map(e => e.getBoundingClientRect().top - wr.top);
+    if (tops.length) padB = Math.max(0, h - Math.min(...tops) + 6);
+    if (h - padT - padB < 150) { padT = Math.min(padT, h * 0.2); padB = Math.min(padB, h * 0.3); }
+  }
+  const R = Math.min(w, h - padT - padB) / 2 * 0.94 * G.zoom;
+  const proj = G.proj.scale(R).translate([w/2, padT + (h - padT - padB) / 2]).rotate(G.rot);
   const path = d3.geoPath(proj, ctx);
   ctx.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
