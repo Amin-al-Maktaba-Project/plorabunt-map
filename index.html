@@ -415,8 +415,9 @@
   #attireModal .am-view.anim #attireStage{transition:transform .35s ease;}
   #attireCard{position:relative;transform-style:preserve-3d;}
   #attireCard.flip{transition:transform .7s ease;}
-  #attireCard img{position:absolute;left:0;top:0;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;}
-  #attireBackImg{transform:rotateY(180deg);}
+  #attireCard img{position:absolute;left:0;top:0;width:100%;height:100%;display:none;pointer-events:none;}
+  #attireCard img.on{display:block;}
+  #attireCard img.mir{transform:scaleX(-1);}
   #attireModal .am-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 22px 0;}
   #attireModal .am-hint{padding:8px 22px 0;font-size:11.5px;color:var(--ink-dim);}
   #attireModal .am-note{padding:12px 22px 18px;font-size:12.5px;line-height:1.55;color:var(--ink-dim);}
@@ -904,7 +905,7 @@
       <div><div class="k">Attire, visual reconstruction</div><h3 id="attireTitle"></h3></div>
       <button id="attireClose" aria-label="Close">✕</button>
     </div>
-    <div class="am-view" id="attireView"><div id="attireStage"><div id="attireCard"><img id="attireFrontImg" alt="" draggable="false"><img id="attireBackImg" alt="" draggable="false"></div></div></div>
+    <div class="am-view" id="attireView"><div id="attireStage"><div id="attireCard"></div></div></div>
     <div class="am-bar">
       <div class="segmented" id="attireViews"></div>
       <div class="segmented" id="attireZoom"><button type="button" data-z="in" aria-label="Zoom in">+</button><button type="button" data-z="out" aria-label="Zoom out">−</button><button type="button" data-z="reset" aria-label="Reset view">⟲</button></div>
@@ -2083,17 +2084,24 @@ function renderDetailNames(it) {
    official report documents the attire. The image is an illustration, never a photograph. */
 const ATTIRE = [{
   title: 'Christchurch mosque attacks, 15 March 2019',
-  front: 'christchurch_front.png', back: 'christchurch_back.png',
+  /* eight positions, 45 degrees apart. The sheet has six views; the two missing ones (back-right, front-right)
+     are mirror images of back-left and front-left. */
+  frames: [
+    { src: 'christchurch_v1.png', ang: 0 }, { src: 'christchurch_v2.png', ang: 45 },
+    { src: 'christchurch_v3.png', ang: 90 }, { src: 'christchurch_v6.png', ang: 135 },
+    { src: 'christchurch_v4.png', ang: 180 }, { src: 'christchurch_v6.png', ang: 225, mir: 1 },
+    { src: 'christchurch_v5.png', ang: 270 }, { src: 'christchurch_v2.png', ang: 315, mir: 1 }
+  ],
   alt: 'Faceless figure in military-style camouflage clothing, tactical vest and helmet',
-  w: 470, h: 1240,
+  w: 340, h: 812,
   views: [
-    { k: 'Front', r: [0, 0, 470, 1240], face: 0 },
-    { k: 'Back',  r: [0, 0, 470, 1240], face: 180 },
-    { k: 'Head',  r: [120, 0, 230, 270], keep: true },
-    { k: 'Chest', r: [60, 170, 350, 430], keep: true }
+    { k: 'Front', r: [0, 0, 340, 812], ang: 0 },
+    { k: 'Back',  r: [0, 0, 340, 812], ang: 180 },
+    { k: 'Head',  r: [70, 0, 200, 200] },
+    { k: 'Chest', r: [30, 120, 280, 300] }
   ],
   match: it => it.d === '20190315' && it.city === 'Christchurch' && it.justB === 'Convicted or sentenced',
-  note: `<p>Illustrative reconstruction, not a photograph. The Royal Commission documents these items: ballistic vests, military-style camouflage clothing, a tactical vest holding at least seven magazines, and a helmet with a camera mounted on the front (paragraphs 6, 7, 13 and 14). Details it does not mention, such as gloves and a face covering, are not evidence. The figure turns only a few degrees: there are no side views, and the lower half of the back view is a mirror of the front. <a href="https://christchurchattack.royalcommission.nz/the-report/part-1-purpose-and-process/the-terrorist-attack" target="_blank" rel="noopener">Source: Royal Commission of Inquiry, Part 1, chapter 2 ↗</a></p>`
+  note: `<p>Illustrative reconstruction, not a photograph. The Royal Commission documents these items: ballistic vests, military-style camouflage clothing, a tactical vest holding at least seven magazines, and a helmet with a camera mounted on the front (paragraphs 6, 7, 13 and 14). Details it does not mention, such as gloves, boots, a face covering and the camouflage pattern, are not evidence. Drag sideways to turn the figure: six angles come from the reconstruction and two are their mirror images. <a href="https://christchurchattack.royalcommission.nz/the-report/part-1-purpose-and-process/the-terrorist-attack" target="_blank" rel="noopener">Source: Royal Commission of Inquiry, Part 1, chapter 2 ↗</a></p>`
 }];
 /* Additional sources for specific incidents, kept here so a data import never overwrites them. */
 const EXTRA_SOURCES = [{
@@ -2101,11 +2109,18 @@ const EXTRA_SOURCES = [{
   links: [{ t: 'RNZ: \u2018We defy your actions of hatred\u2019, victims tell their stories as the killer faces sentence', u: 'https://www.rnz.co.nz/news/national/424538/christchurch-mosque-attacks-we-defy-your-actions-of-hatred-victims-tell-their-stories-as-killer-faces-sentence'  },
     { t: 'RNZ: Christchurch mosque shooter wanted to be called a terrorist, ex-lawyer says', u: 'https://www.rnz.co.nz/news/national/586356/christchurch-mosque-shooter-wanted-to-be-called-a-terrorist-ex-lawyer-says' }]
 }];
-const AT = { s:1, x:0, y:0, yaw:0, face:0, w:470, h:1240, minS:.2, maxS:2.5, ptrs:new Map(), last:null };
+const AT = { s:1, x:0, y:0, ang:0, raf:0, w:340, h:812, minS:.2, maxS:2.5, ptrs:new Map(), last:null };
 const atView = () => document.getElementById('attireView'), atImg = () => document.getElementById('attireStage');
-function atRot(flip) {
-  const c = document.getElementById('attireCard'); c.classList.toggle('flip', !!flip);
-  c.style.transform = `perspective(${AT.h * 2.2}px) rotateY(${AT.face + AT.yaw}deg)`;
+function atRot() {
+  AT.ang = ((AT.ang % 360) + 360) % 360;
+  const n = Math.round(AT.ang / 45) % 8;
+  document.querySelectorAll('#attireCard img').forEach((im, k) => im.classList.toggle('on', k === n));
+}
+function atTurn(target) {
+  cancelAnimationFrame(AT.raf);
+  const from = AT.ang; let d = ((target - from) % 360 + 540) % 360 - 180, t0 = performance.now();
+  const step = t => { const u = Math.min(1, (t - t0) / 600), e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; AT.ang = from + d * e; atRot(); if (u < 1) AT.raf = requestAnimationFrame(step); };
+  AT.raf = requestAnimationFrame(step);
 }
 function atApply(anim) {
   const v = atView(); v.classList.toggle('anim', !!anim);
@@ -2133,14 +2148,13 @@ function atZoomAt(f, px, py, anim) {
 function openAttire(i) {
   const a = ATTIRE[i]; if (!a) return;
   document.getElementById('attireTitle').textContent = a.title;
-  const fi = document.getElementById('attireFrontImg'), bi = document.getElementById('attireBackImg');
-  fi.src = a.front; bi.src = a.back; fi.alt = a.alt; bi.alt = a.alt + ' (back)';
   const cd = document.getElementById('attireCard'); cd.style.width = a.w + 'px'; cd.style.height = a.h + 'px';
-  AT.w = a.w; AT.h = a.h; AT.yaw = 0; AT.face = 0; atRot(false);
+  cd.innerHTML = a.frames.map(f => `<img src="${f.src}" alt="${a.alt}" draggable="false"${f.mir ? ' class="mir"' : ''}>`).join('');
+  AT.w = a.w; AT.h = a.h; AT.ang = 0; cancelAnimationFrame(AT.raf); atRot();
   document.getElementById('attireNote').innerHTML = a.note;
   const vs = document.getElementById('attireViews');
   vs.innerHTML = a.views.map((v, k) => `<button type="button" data-v="${k}">${v.k}</button>`).join('');
-  vs.onclick = e => { const b = e.target.closest('button'); if (!b) return; vs.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b)); const vw = a.views[+b.dataset.v]; if (vw.face !== undefined) { AT.face = vw.face; AT.yaw = 0; atRot(true); } atFit(vw.r, true); };
+  vs.onclick = e => { const b = e.target.closest('button'); if (!b) return; vs.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b)); const vw = a.views[+b.dataset.v]; if (vw.ang !== undefined) atTurn(vw.ang); atFit(vw.r, true); };
   document.getElementById('attireOverlay').classList.add('open');
   const v = atView(); AT.minS = Math.min(v.clientWidth / a.w, v.clientHeight / a.h) * .8;
   vs.querySelector('button').click(); atApply(false);
@@ -2159,9 +2173,9 @@ function openAttire(i) {
       AT.ptrs.set(e.pointerId, [e.clientX, e.clientY]);
       if (d0 > 0) atZoomAt(d1 / d0, (e.clientX + o[0]) / 2 - r.left, (e.clientY + o[1]) / 2 - r.top, false);
     } else {
-      /* drag sideways tilts the figure (a few degrees only), drag up or down moves it */
-      AT.yaw = Math.max(-16, Math.min(16, AT.yaw + (e.clientX - prev[0]) * 0.25)); AT.y += e.clientY - prev[1];
-      AT.ptrs.set(e.pointerId, [e.clientX, e.clientY]); atRot(false); atApply(false);
+      /* drag sideways turns the figure all the way round, drag up or down moves it */
+      cancelAnimationFrame(AT.raf); AT.ang += (e.clientX - prev[0]) * 0.6; AT.y += e.clientY - prev[1];
+      AT.ptrs.set(e.pointerId, [e.clientX, e.clientY]); atRot(); atApply(false);
     }
   });
   const up = e => { AT.ptrs.delete(e.pointerId); if (!AT.ptrs.size) v.classList.remove('drag'); };
@@ -2173,7 +2187,7 @@ function openAttire(i) {
     const r = v.getBoundingClientRect(), cx = r.width / 2, cy = r.height / 2;
     if (b.dataset.z === 'in') atZoomAt(1.4, cx, cy, true);
     else if (b.dataset.z === 'out') atZoomAt(1 / 1.4, cx, cy, true);
-    else { AT.yaw = 0; atRot(true); document.querySelector('#attireViews button').click(); }
+    else { document.querySelector('#attireViews button').click(); }
   });
   window.addEventListener('resize', () => { if (document.getElementById('attireOverlay').classList.contains('open')) atApply(false); });
 })();
