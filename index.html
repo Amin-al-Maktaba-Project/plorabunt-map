@@ -400,6 +400,31 @@
   .inc{cursor:pointer;}
   .inc:hover h3{color:var(--red);}
 
+  /* Attire reconstruction window (opened from a case record) */
+  #attireOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:30;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}
+  #attireOverlay.open{display:flex;}
+  #attireModal{width:min(760px,100%);max-height:92vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--line);border-radius:8px;}
+  #attireModal .am-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:18px 22px 12px;border-bottom:1px solid var(--line);}
+  #attireModal .am-head .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--red);margin-bottom:4px;}
+  #attireModal .am-head h3{font-family:'Noto Serif',Georgia,serif;font-size:19px;margin:0;line-height:1.3;}
+  #attireClose{background:none;border:none;color:var(--ink-dim);font-size:19px;cursor:pointer;flex-shrink:0;}
+  #attireClose:hover{color:var(--ink);}
+  #attireModal .am-view{position:relative;margin:14px 22px 0;height:min(60vh,520px);transition:height .25s ease;overflow:hidden;border-radius:4px;border:1px solid var(--line);background:#d9d9dc;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;}
+  #attireModal .am-view.drag{cursor:grabbing;}
+  #attireStage{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;pointer-events:none;}
+  #attireModal .am-view.anim #attireStage{transition:transform .35s ease;}
+  #attireCard{position:relative;transform-style:preserve-3d;}
+  #attireCard.flip{transition:transform .7s ease;}
+  #attireCard img{position:absolute;left:0;top:0;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;pointer-events:none;}
+  #attireBackImg{transform:rotateY(180deg);}
+  #attireModal .am-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 22px 0;}
+  #attireModal .am-hint{padding:8px 22px 0;font-size:11.5px;color:var(--ink-dim);}
+  #attireModal .am-note{padding:12px 22px 18px;font-size:12.5px;line-height:1.55;color:var(--ink-dim);}
+  #attireModal .am-note b{color:var(--ink);}
+  #attireModal .am-note p{margin:0 0 9px;}
+  .detail-attire{padding:4px 0 12px;}
+  .attire-btn{display:inline-block;margin:0 0 6px;padding:6px 11px;border:1px solid var(--red);border-radius:100px;background:transparent;color:var(--red);font-size:12px;cursor:pointer;font-family:inherit;}
+  .attire-btn:hover{background:var(--red);color:#fff;}
   #detailOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:25;align-items:center;justify-content:center;}
   #detailOverlay.open{display:flex;}
   #detailModal{width:560px;max-height:88vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;}
@@ -873,6 +898,21 @@
   </div>
 </div>
 
+<div id="attireOverlay" role="dialog" aria-modal="true" aria-labelledby="attireTitle">
+  <div id="attireModal">
+    <div class="am-head">
+      <div><div class="k">Attire, visual reconstruction</div><h3 id="attireTitle"></h3></div>
+      <button id="attireClose" aria-label="Close">✕</button>
+    </div>
+    <div class="am-view" id="attireView"><div id="attireStage"><div id="attireCard"><img id="attireFrontImg" alt="" draggable="false"><img id="attireBackImg" alt="" draggable="false"></div></div></div>
+    <div class="am-bar">
+      <div class="segmented" id="attireViews"></div>
+      <div class="segmented" id="attireZoom"><button type="button" data-z="in" aria-label="Zoom in">+</button><button type="button" data-z="out" aria-label="Zoom out">−</button><button type="button" data-z="reset" aria-label="Reset view">⟲</button></div>
+    </div>
+    <div class="am-note" id="attireNote"></div>
+  </div>
+</div>
+
 <div id="detailOverlay">
   <div id="detailModal">
     <div id="detailModal-head">
@@ -894,6 +934,7 @@
         <div class="detail-item"><div class="k">Victims killed</div><div class="v" id="detail-vic"></div></div>
         <div class="detail-item"><div class="k">Injured</div><div class="v" id="detail-inj"></div></div>
       </div>
+      <div class="detail-attire" id="detail-attire" style="display:none;"></div>
       <div class="detail-names" id="detail-names" style="display:none;"></div>
       <div class="detail-full" id="detail-links"></div>
     </div>
@@ -2038,6 +2079,109 @@ function renderDetailNames(it) {
   const cb = document.getElementById('dnPerp');
   if (cb) cb.addEventListener('change', () => { showPerpNames = cb.checked; prefSet('plorabunt.showPerpNames', showPerpNames); renderDetailNames(it); });
 }
+/* Attire reconstructions. Shown only for incidents with a recorded conviction, and only where an
+   official report documents the attire. The image is an illustration, never a photograph. */
+const ATTIRE = [{
+  title: 'Christchurch mosque attacks, 15 March 2019',
+  front: 'christchurch_front.png', back: 'christchurch_back.png',
+  alt: 'Faceless figure in military-style camouflage clothing, tactical vest and helmet',
+  w: 470, h: 1240,
+  views: [
+    { k: 'Front', r: [0, 0, 470, 1240], face: 0 },
+    { k: 'Back',  r: [0, 0, 470, 1240], face: 180 },
+    { k: 'Head',  r: [120, 0, 230, 270], keep: true },
+    { k: 'Chest', r: [60, 170, 350, 430], keep: true }
+  ],
+  match: it => it.d === '20190315' && it.city === 'Christchurch' && it.justB === 'Convicted or sentenced',
+  note: `<p>Illustrative reconstruction, not a photograph. The Royal Commission documents these items: ballistic vests, military-style camouflage clothing, a tactical vest holding at least seven magazines, and a helmet with a camera mounted on the front (paragraphs 6, 7, 13 and 14). Details it does not mention, such as gloves and a face covering, are not evidence. The figure turns only a few degrees: there are no side views, and the lower half of the back view is a mirror of the front. <a href="https://christchurchattack.royalcommission.nz/the-report/part-1-purpose-and-process/the-terrorist-attack" target="_blank" rel="noopener">Source: Royal Commission of Inquiry, Part 1, chapter 2 ↗</a></p>`
+}];
+/* Additional sources for specific incidents, kept here so a data import never overwrites them. */
+const EXTRA_SOURCES = [{
+  match: it => it.d === '20190315' && it.city === 'Christchurch',
+  links: [{ t: 'RNZ: \u2018We defy your actions of hatred\u2019, victims tell their stories as the killer faces sentence', u: 'https://www.rnz.co.nz/news/national/424538/christchurch-mosque-attacks-we-defy-your-actions-of-hatred-victims-tell-their-stories-as-killer-faces-sentence'  },
+    { t: 'RNZ: Christchurch mosque shooter wanted to be called a terrorist, ex-lawyer says', u: 'https://www.rnz.co.nz/news/national/586356/christchurch-mosque-shooter-wanted-to-be-called-a-terrorist-ex-lawyer-says' }]
+}];
+const AT = { s:1, x:0, y:0, yaw:0, face:0, w:470, h:1240, minS:.2, maxS:2.5, ptrs:new Map(), last:null };
+const atView = () => document.getElementById('attireView'), atImg = () => document.getElementById('attireStage');
+function atRot(flip) {
+  const c = document.getElementById('attireCard'); c.classList.toggle('flip', !!flip);
+  c.style.transform = `perspective(${AT.h * 2.2}px) rotateY(${AT.face + AT.yaw}deg)`;
+}
+function atApply(anim) {
+  const v = atView(); v.classList.toggle('anim', !!anim);
+  const vw = v.clientWidth, vh = parseFloat(v.style.height) || v.clientHeight;
+  AT.s = Math.min(AT.maxS, Math.max(AT.minS, AT.s));
+  AT.x = Math.min(vw * .85, Math.max(vw * .15 - AT.w * AT.s, AT.x));
+  AT.y = Math.min(vh * .85, Math.max(vh * .15 - AT.h * AT.s, AT.y));
+  atImg().style.transform = `translate(${AT.x}px,${AT.y}px) scale(${AT.s})`;
+}
+function atFit(r, anim) {
+  const v = atView(), vw = v.clientWidth;
+  /* the window takes the shape of the chosen view, so neighbouring parts of the sheet stay out of sight */
+  const maxH = Math.min(window.innerHeight * 0.6, 520);
+  const vh = Math.round(Math.max(220, Math.min(maxH, vw * r[3] / r[2] / 0.96)));
+  v.style.height = vh + 'px';
+  AT.s = Math.min(vw / r[2], vh / r[3]) * .96;
+  AT.x = (vw - r[2] * AT.s) / 2 - r[0] * AT.s;
+  AT.y = (vh - r[3] * AT.s) / 2 - r[1] * AT.s;
+  atApply(anim);
+}
+function atZoomAt(f, px, py, anim) {
+  const s2 = Math.min(AT.maxS, Math.max(AT.minS, AT.s * f)), k = s2 / AT.s;
+  AT.x = px - (px - AT.x) * k; AT.y = py - (py - AT.y) * k; AT.s = s2; atApply(anim);
+}
+function openAttire(i) {
+  const a = ATTIRE[i]; if (!a) return;
+  document.getElementById('attireTitle').textContent = a.title;
+  const fi = document.getElementById('attireFrontImg'), bi = document.getElementById('attireBackImg');
+  fi.src = a.front; bi.src = a.back; fi.alt = a.alt; bi.alt = a.alt + ' (back)';
+  const cd = document.getElementById('attireCard'); cd.style.width = a.w + 'px'; cd.style.height = a.h + 'px';
+  AT.w = a.w; AT.h = a.h; AT.yaw = 0; AT.face = 0; atRot(false);
+  document.getElementById('attireNote').innerHTML = a.note;
+  const vs = document.getElementById('attireViews');
+  vs.innerHTML = a.views.map((v, k) => `<button type="button" data-v="${k}">${v.k}</button>`).join('');
+  vs.onclick = e => { const b = e.target.closest('button'); if (!b) return; vs.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b)); const vw = a.views[+b.dataset.v]; if (vw.face !== undefined) { AT.face = vw.face; AT.yaw = 0; atRot(true); } atFit(vw.r, true); };
+  document.getElementById('attireOverlay').classList.add('open');
+  const v = atView(); AT.minS = Math.min(v.clientWidth / a.w, v.clientHeight / a.h) * .8;
+  vs.querySelector('button').click(); atApply(false);
+  atFit(a.views[0].r, false);
+  AT.cur = i;
+}
+(function () {
+  const v = document.getElementById('attireView');
+  v.addEventListener('pointerdown', e => { v.setPointerCapture(e.pointerId); AT.ptrs.set(e.pointerId, [e.clientX, e.clientY]); v.classList.add('drag'); v.classList.remove('anim'); AT.pd = null; });
+  v.addEventListener('pointermove', e => {
+    if (!AT.ptrs.has(e.pointerId)) return;
+    const prev = AT.ptrs.get(e.pointerId), r = v.getBoundingClientRect();
+    if (AT.ptrs.size === 2) {
+      const o = [...AT.ptrs.entries()].find(([id]) => id !== e.pointerId)[1];
+      const d0 = Math.hypot(prev[0] - o[0], prev[1] - o[1]), d1 = Math.hypot(e.clientX - o[0], e.clientY - o[1]);
+      AT.ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+      if (d0 > 0) atZoomAt(d1 / d0, (e.clientX + o[0]) / 2 - r.left, (e.clientY + o[1]) / 2 - r.top, false);
+    } else {
+      /* drag sideways tilts the figure (a few degrees only), drag up or down moves it */
+      AT.yaw = Math.max(-16, Math.min(16, AT.yaw + (e.clientX - prev[0]) * 0.25)); AT.y += e.clientY - prev[1];
+      AT.ptrs.set(e.pointerId, [e.clientX, e.clientY]); atRot(false); atApply(false);
+    }
+  });
+  const up = e => { AT.ptrs.delete(e.pointerId); if (!AT.ptrs.size) v.classList.remove('drag'); };
+  v.addEventListener('pointerup', up); v.addEventListener('pointercancel', up);
+  v.addEventListener('wheel', e => { e.preventDefault(); const r = v.getBoundingClientRect(); atZoomAt(Math.exp(-e.deltaY * 0.0018), e.clientX - r.left, e.clientY - r.top, false); }, { passive: false });
+  v.addEventListener('dblclick', e => { const r = v.getBoundingClientRect(); atZoomAt(1.6, e.clientX - r.left, e.clientY - r.top, true); });
+  document.getElementById('attireZoom').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const r = v.getBoundingClientRect(), cx = r.width / 2, cy = r.height / 2;
+    if (b.dataset.z === 'in') atZoomAt(1.4, cx, cy, true);
+    else if (b.dataset.z === 'out') atZoomAt(1 / 1.4, cx, cy, true);
+    else { AT.yaw = 0; atRot(true); document.querySelector('#attireViews button').click(); }
+  });
+  window.addEventListener('resize', () => { if (document.getElementById('attireOverlay').classList.contains('open')) atApply(false); });
+})();
+const closeAttire = () => document.getElementById('attireOverlay').classList.remove('open');
+document.getElementById('attireClose').addEventListener('click', closeAttire);
+document.getElementById('attireOverlay').addEventListener('click', e => { if (e.target.id === 'attireOverlay') closeAttire(); });
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.attire-btn'); if (b) openAttire(+b.dataset.attire); });
+
 function openDetail(it) {
   document.getElementById('detail-date').textContent = fmtDate(it.d);
   document.getElementById('detail-title').textContent = it.ev || 'Untitled incident';
@@ -2055,9 +2199,13 @@ function openDetail(it) {
   document.getElementById('detail-vic').textContent = it.vic || 'Unknown';
   document.getElementById('detail-inj').textContent = it.inj || 'Unknown';
   renderDetailNames(it);
+  const attEl = document.getElementById('detail-attire');
+  const attBtns = ATTIRE.map((a, i) => a.match(it) ? `<button type="button" class="attire-btn" data-attire="${i}">View attire of the attacker (visual reconstruction)</button>` : '').join('');
+  attEl.innerHTML = attBtns; attEl.style.display = attBtns ? '' : 'none';
   const linksEl = document.getElementById('detail-links');
   const links = [];
   if (it.src) links.push(`<a href="${it.src}" target="_blank" rel="noopener">Source ↗</a>`);
+  EXTRA_SOURCES.forEach(x => { if (x.match(it)) x.links.forEach(l => links.push(`<a href="${l.u}" target="_blank" rel="noopener">${l.t} ↗</a>`)); });
   if (it.attachment) links.push(`<a href="${it.attachment.dataUrl}" download="${it.attachment.name}">📎 ${it.attachment.name}</a>`);
   linksEl.innerHTML = links.length ? links.join('<br>') : '';
   const rTitle = 'Issue with record: ' + (it.ev || 'Untitled') + ' (' + fmtDate(it.d) + ')';
@@ -2165,6 +2313,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     aboutOverlay.classList.remove('open');
     addOverlay.classList.remove('open');
+    closeAttire();
   }
 });
 
